@@ -68,9 +68,18 @@ def multinomial_logreg_grad_i(x, y, gamma, W):
     ans = np.dot(yHat, x)
     return ans
 # test that the function multinomial_logreg_grad_i is indeed the gradient of multinomial_logreg_loss_i
-def test_gradient():
+def test_gradient(Xs, Ys, gamma, W):
     # TODO students should implement this in Part 1
+    # d,c = W.shape
+    # extend = [0 for _ in range((c-1)*d)]
+    # print(Xs)
+    # Xs = np.concatenate((Xs.T, extend), axis=None)
+    # print(Xs.shape)
+    # print(W.shape)
     pass
+
+
+#
 # compute the error of the classifier
 #
 # Xs        examples          (d * n)
@@ -104,7 +113,7 @@ def multinomial_logreg_total_grad(Xs, Ys, gamma, W):
     # Numpy Code
     term1 = softmax(np.dot(W,Xs.T), axis=0)
     term2 = Xs
-    ans = np.dot(term1, term2)
+    ans = np.dot(term1-Ys.T, term2)
     ans += gamma*W
     return ans/Xs.shape[0]
     ###################################
@@ -131,10 +140,10 @@ def multinomial_logreg_total_loss(Xs, Ys, gamma, W):
     ###################################
     # Numpy Code
     term1 = softmax(np.dot(W,Xs.T), axis=0)
-    term1 = np.log(term1)
+    term1 = -1 * np.log(term1)
     term2 = Ys.T
     ans = np.multiply(term1, term2)
-    ans = -1 * np.sum(ans)/ans.shape[1]
+    ans = np.sum(ans)/(ans.shape[1])
     ans += (gamma/2)*(np.linalg.norm(W, 'fro'))**2
     return ans
     ###################################
@@ -185,17 +194,17 @@ if __name__ == "__main__":
     x = Xs_tr[0]
     y = Ys_tr[0]
     gamma = 0.001
-    # W = np.random.rand(Ys_tr.shape[1], Xs_tr.shape[1])
-    W = np.zeros([Ys_tr.shape[1], Xs_tr.shape[1]])
-    multinomial_logreg_loss_i(x, y, gamma, W)
-    multinomial_logreg_grad_i(x, y, gamma, W)
-
+    W = np.random.rand(Ys_tr.shape[1], Xs_tr.shape[1])
+    # W = np.zeros([Ys_tr.shape[1], Xs_tr.shape[1]])
+    # multinomial_logreg_loss_i(x, y, gamma, W)
+    # multinomial_logreg_grad_i(x, y, gamma, W)
+    test_gradient(x, y, gamma, W)
     #Pass Entire Dataset
     alpha = 0.10
     numberIter = 1000
     monitorFreq = 10
     W, loss = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
-    print(len(loss))
-    plt.plot(range(1,numberIter//monitorFreq+1),loss)
+    # print(len(loss))
+    plt.plot(loss, range(1,numberIter//monitorFreq+1))
     plt.savefig("myGraph_"+str(numberIter)+".png")
     # TODO add code to produce figures
