@@ -48,9 +48,9 @@ def load_MNIST_dataset():
 # returns   the model cross-entropy loss
 def multinomial_logreg_loss_i(x, y, gamma, W):
     # TODO students should implement this in Part 1
-    yHat = softmax(np.dot(W,x.T))
+    yHat = softmax(np.dot(W,x))
     yHat = np.log(yHat)
-    ans = -1 * np.dot(y, yHat)
+    ans = -1 * np.dot(y.T, yHat)
     ans += (gamma/2)*np.linalg.norm(W, 'fro')
     return ans
 # compute the gradient of a single example of the multinomial logistic regression objective, with regularization
@@ -63,9 +63,9 @@ def multinomial_logreg_loss_i(x, y, gamma, W):
 # returns   the gradient of the model parameters
 def multinomial_logreg_grad_i(x, y, gamma, W):
     # TODO students should implement this in Part 1
-    yHat = softmax(np.dot(W,x.T))
-    yHat -= y.T
-    ans = np.dot(yHat, x)
+    yHat = softmax(np.dot(W,x))
+    yHat -= y
+    ans = np.dot(yHat, x.T)
     return ans
 # test that the function multinomial_logreg_grad_i is indeed the gradient of multinomial_logreg_loss_i
 def test_gradient(Xs, Ys, gamma, W):
@@ -111,11 +111,11 @@ def multinomial_logreg_total_grad(Xs, Ys, gamma, W):
     
     ###################################
     # Numpy Code
-    term1 = softmax(np.dot(W,Xs.T), axis=0)
-    term2 = Xs
-    ans = np.dot(term1-Ys.T, term2)
+    term1 = softmax(np.dot(W,Xs), axis=0)
+    term2 = Xs.T
+    ans = np.dot(term1-Ys, term2)
     ans += gamma*W
-    return ans/Xs.shape[0]
+    return ans/Xs.shape[1]
     ###################################
 
 # compute the cross-entropy loss of the classifier
@@ -139,11 +139,11 @@ def multinomial_logreg_total_loss(Xs, Ys, gamma, W):
     
     ###################################
     # Numpy Code
-    term1 = softmax(np.dot(W,Xs.T), axis=0)
+    term1 = softmax(np.dot(W,Xs), axis=0)
     term1 = -1 * np.log(term1)
-    term2 = Ys.T
+    term2 = Ys
     ans = np.multiply(term1, term2)
-    ans = np.sum(ans)/(ans.shape[1])
+    ans = np.sum(ans)/(ans.shape[0])
     ans += (gamma/2)*(np.linalg.norm(W, 'fro'))**2
     return ans
     ###################################
@@ -187,21 +187,21 @@ def estimate_multinomial_logreg_error(Xs, Ys, W, nsamples):
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
     #Convert all marices to np matrices
-    Xs_tr, Xs_te, Ys_tr, Ys_te = np.matrix(Xs_tr.T), np.matrix(Xs_te.T), np.matrix(Ys_tr.T), np.matrix(Ys_te.T)
+    Xs_tr, Xs_te, Ys_tr, Ys_te = np.matrix(Xs_tr), np.matrix(Xs_te), np.matrix(Ys_tr), np.matrix(Ys_te)
     print("Shape of initial X:", Xs_tr.shape)
     print("Shape of initial Y:", Ys_tr.shape)
     #Pass one example into function_i
     x = Xs_tr[0]
     y = Ys_tr[0]
     gamma = 0.001
-    W = np.random.rand(Ys_tr.shape[1], Xs_tr.shape[1])
+    W = np.random.rand(Ys_tr.shape[0], Xs_tr.shape[0])
     # W = np.zeros([Ys_tr.shape[1], Xs_tr.shape[1]])
     # multinomial_logreg_loss_i(x, y, gamma, W)
     # multinomial_logreg_grad_i(x, y, gamma, W)
     test_gradient(x, y, gamma, W)
     #Pass Entire Dataset
     alpha = 0.10
-    numberIter = 1000
+    numberIter = 100
     monitorFreq = 10
     W, loss = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
     # print(len(loss))
