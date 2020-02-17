@@ -7,6 +7,7 @@ import mnist
 import pickle
 matplotlib.use('agg')
 from matplotlib import pyplot as plt
+np.set_printoptions(threshold=np.inf)
 
 mnist_data_directory = os.path.join(os.path.dirname(__file__), "data")
 
@@ -73,32 +74,32 @@ def multinomial_logreg_grad_i(x, y, gamma, W):
 
 
 # test that the function multinomial_logreg_grad_i is indeed the gradient of multinomial_logreg_loss_i
-def test_gradient(Xs, Ys, gamma, W):
+def test_gradient(Xs, Ys, gamma, W, alpha):
     # TODO students should implement this in Part 1
+    # ----- EXAMPLE CASE BEGINS
     # Xs = np.matrix([[-1], [0], [1]])
     # Ys = np.matrix([[1], [0]])
     # W = np.matrix([[1,2,3], [4,5,6]])
     # V = np.matrix([[1, 0, 0], [1, 0, 1]])
-    X_tr = Xs
-    Y_tr = Ys
+    # ----- EXAMPLE CASE ENDS
+
+    num_examples = Xs.shape[1]
     count = 0
-    for i in range(60000):
-        Xs = X_tr[:,i]
-        Ys = Y_tr[:,i]
+    for i in range(num_examples):
+        X_i, Y_i = Xs[:,i], Ys[:,i]
         V = np.random.rand(W.shape[0], W.shape[1])
-        alpha = 10**(-5)
-        newW = W + alpha*V
-        V = V.reshape(-1,1)
-        grad = multinomial_logreg_grad_i(Xs, Ys, gamma, W)
-        func1 = multinomial_logreg_loss_i(Xs, Ys, gamma, newW)
-        func2 = multinomial_logreg_loss_i(Xs, Ys, gamma, W)
+        # RHS
+        func1 = multinomial_logreg_loss_i(X_i, Y_i, gamma, W + alpha*V)
+        func2 = multinomial_logreg_loss_i(X_i, Y_i, gamma, W)
         RHS = (func1-func2)/alpha
+        # LHS
+        V = V.reshape(-1,1)
+        grad = multinomial_logreg_grad_i(X_i, Y_i, gamma, W)
         grad = grad.reshape(-1,1)
         LHS = np.dot(V.T, grad).item()
-        count += abs(LHS-RHS)
-        # print(abs(LHS-RHS), LHS, RHS)
-    print("Avg: ", count/60000)
-    return
+        # Difference
+        count += abs(LHS - RHS)
+    return count / num_examples
 
 
 #
@@ -128,24 +129,21 @@ def multinomial_logreg_error(Xs, Ys, W):
 # W         parameters        (c * d)
 #
 # returns   the gradient of the model parameters
-def multinomial_logreg_total_grad(Xs, Ys, gamma, W, starter = False):
+def multinomial_logreg_total_grad(Xs, Ys, gamma, W, starter=False):
     # TODO students should implement this
     # a starter solution using an average of the example gradients
     (d,n) = Xs.shape
     ret = 0
     if starter == True:
-        ###################################
-         # Starter Code
+        # ----- STARTER CODE
         ret = W * 0.0
         for i in range(n):
             ret += multinomial_logreg_grad_i(Xs[:,i], Ys[:,i], gamma, W)
     else:
-        ###################################
-        # Numpy Code
+        # ----- NUMPY CODE
         y_hat = softmax(np.dot(W,Xs), axis=0)
         del_L = np.dot(y_hat - Ys, Xs.T)
         ret = del_L + gamma*W
-        ###################################
     return ret / n
 
 # compute the cross-entropy loss of the classifier
@@ -156,7 +154,7 @@ def multinomial_logreg_total_grad(Xs, Ys, gamma, W, starter = False):
 # W         parameters        (c * d)
 #
 # returns   the model cross-entropy loss
-def multinomial_logreg_total_loss(Xs, Ys, gamma, W, starter = False):
+def multinomial_logreg_total_loss(Xs, Ys, gamma, W, starter=False):
     # TODO students should implement this
     # a starter solution using an average of the example gradients
     (d,n) = Xs.shape
@@ -190,21 +188,21 @@ def multinomial_logreg_total_loss(Xs, Ys, gamma, W, starter = False):
 # returns       a list of models parameters, one every "monitor_freq" iterations
 #               should return model parameters before iteration 0, iteration monitor_freq, iteration 2*monitor_freq, and again at the end
 #               for a total of (num_iters/monitor_freq)+1 models, if num_iters is divisible by monitor_freq.
-def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq):
+def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq, starter=False):
     # TODO students should implement this
     start_time = datetime.datetime.now()
-    freq = []
+    params = []
     loss = []
     error = []
     for i in range(num_iters):
         if (i % monitor_freq == 0):
-            freq.append(W0)
+            params.append(W0)
             error.append(multinomial_logreg_error(Xs, Ys, W0))
-            loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0))
-        W0 -= alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0)
-    freq.append(W0)
+            loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
+        W0 -= alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
+    params.append(W0)
     end_time = datetime.datetime.now()
-    return freq, loss, error, end_time - start_time
+    return params, loss, error, end_time - start_time
 
 # estimate the error of the classifier
 #
@@ -225,28 +223,55 @@ if __name__ == "__main__":
     Xs_tr, Xs_te, Ys_tr, Ys_te = np.matrix(Xs_tr), np.matrix(Xs_te), np.matrix(Ys_tr), np.matrix(Ys_te)
     print("Shape of initial X:", Xs_tr.shape)
     print("Shape of initial Y:", Ys_tr.shape)
+
+    DIVIDER = "#"*20
+
+    # Part 1
+    print(f"{DIVIDER}\nRunning part 1 ...\n")
     gamma = 0.0001
+    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    alpha = [10**-1, 10**-3, 10**-5]
+    for a in alpha:
+        ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
+        print(f"For alpha={a}, average difference is: {ret}")
+    print("\nPart 1 complete .\n")
+
     #Pass one example into function_i
     # x = Xs_tr[:,8]
     # y = Ys_tr[:,8]
-    W = np.random.rand(Ys_tr.shape[0], Xs_tr.shape[0])
-
-    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    # W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
     # multinomial_logreg_loss_i(x, y, gamma, W)
     # multinomial_logreg_grad_i(x, y, gamma, W)
-    test_gradient(Xs_tr, Ys_tr, gamma, W)
-    exit(0)
     # test_gradient(x, y, gamma, W)
     #Pass Entire Dataset
 
     # Part 2
-    alpha = 1.0
+    print(f"{DIVIDER}\nRunning part 2 ...\n")
+    params_output_f = "results/params_out.txt"
     gamma = 0.0001
+    alpha = 1.0
     numberIter = 10
-    monitorFreq = 1
+    monitorFreq = 10
+    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    print(f"Running starter code implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
+    W, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq, True)
+    print(f"Time taken for the above config is:  {time_taken}")
+    with open(params_output_f, 'w+') as fout:
+        for param in W:
+            s = "["
+            for val in param:
+                s += str(val) + ","
+            s = s[:-1] + "]"
+            fout.write(s)
+    print("\nPart 2 complete.\n")
+
+    # Part 3
+    print(f"{DIVIDER}\nRunning part 3 ...\n")
+    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
     print(f"Running numpy implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
     W, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
     print(f"Time taken for the above config is:  {time_taken}")
+    print("\nPart 3 complete.\n")
 
     plt.plot(range(1,numberIter//monitorFreq+1), loss)
     plt.plot(range(1,numberIter//monitorFreq+1), error)

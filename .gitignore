@@ -100,3 +100,6 @@ venv.bak/
 dmypy.json
 # Spotlight
 *.DS_Store
+
+#Data
+data/
