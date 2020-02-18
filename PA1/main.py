@@ -281,6 +281,7 @@ if __name__ == "__main__":
     print("\nPart 3 complete.\n")
 
     # Part 4
+    print(f"{DIVIDER}\nRunning part 4 ...\n")
     num_ex = 100
     ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_starter[-1], num_ex)
     print(f"Estimated error from starter, nsamples={num_ex}: {ret}")
@@ -291,8 +292,8 @@ if __name__ == "__main__":
     print(f"Estimated error from starter, nsamples={num_ex}: {ret}")
     ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_numpy[-1], num_ex)
     print(f"Estimated error from numpy,nsamples={num_ex}: {ret}")
-    exit()
+    print("\nPart 3 complete.\n")
 
-    plt.plot(range(1,numberIter//monitorFreq+1), loss)
-    plt.plot(range(1,numberIter//monitorFreq+1), error)
-    plt.savefig("myGraphi_"+str(numberIter)+".png")
+    # plt.plot(range(1,numberIter//monitorFreq+1), loss)
+    # plt.plot(range(1,numberIter//monitorFreq+1), error)
+    # plt.savefig("myGraphi_"+str(numberIter)+".png")
