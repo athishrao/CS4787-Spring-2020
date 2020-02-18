@@ -114,7 +114,7 @@ def test_gradient(Xs, Ys, gamma, W, alpha):
 def multinomial_logreg_error(Xs, Ys, W):
     # TODO students should implement this
     Ys = Ys.T
-    yHat = softmax(np.dot(W,Xs)).T
+    yHat = softmax(np.dot(W,Xs),).T
     count = 0
     for i in range(len(Ys)):
         pred = np.argmax(yHat[i])
@@ -200,10 +200,13 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq, starter=
             params.append(W0)
             error.append(multinomial_logreg_error(Xs, Ys, W0))
             loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
-        W0 -= alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
+        # print(alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter))
+        W0 = W0 - alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
+        # if ((W0 - params[-1]).all() == 0):
+        #     print("same")
+    params.append(W0)
     error.append(multinomial_logreg_error(Xs, Ys, W0))
     loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
-    params.append(W0)
     end_time = datetime.datetime.now()
     return params, loss, error, end_time - start_time
 
@@ -235,46 +238,46 @@ if __name__ == "__main__":
 
     DIVIDER = "#"*20
 
-    # Part 1
-    print(f"{DIVIDER}\nRunning part 1 ...\n")
+    # # Part 1
+    # print(f"{DIVIDER}\nRunning part 1 ...\n")
     gamma = 0.0001
     W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
     alpha = [10**-1, 10**-3, 10**-5]
-    for a in alpha:
-        ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
-        print(f"For alpha={a}, average difference is: {ret}")
-    print("\nPart 1 complete .\n")
+    # for a in alpha:
+    #     ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
+    #     print(f"For alpha={a}, average difference is: {ret}")
+    # print("\nPart 1 complete .\n")
 
-    #Pass one example into function_i
-    # x = Xs_tr[:,8]
-    # y = Ys_tr[:,8]
-    # W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
-    # multinomial_logreg_loss_i(x, y, gamma, W)
-    # multinomial_logreg_grad_i(x, y, gamma, W)
-    # test_gradient(x, y, gamma, W)
-    #Pass Entire Dataset
+    # #Pass one example into function_i
+    # # x = Xs_tr[:,8]
+    # # y = Ys_tr[:,8]
+    # # W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    # # multinomial_logreg_loss_i(x, y, gamma, W)
+    # # multinomial_logreg_grad_i(x, y, gamma, W)
+    # # test_gradient(x, y, gamma, W)
+    # #Pass Entire Dataset
 
-    # Part 2
-    print(f"{DIVIDER}\nRunning part 2 ...\n")
-    params_output_f = "results/params_out.txt"
+    # # Part 2
+    # print(f"{DIVIDER}\nRunning part 2 ...\n")
+    # params_output_f = "results/params_out.txt"
     gamma = 0.0001
     alpha = 1.0
     numberIter = 10
     monitorFreq = 10
-    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
-    # W = np.random.rand(Ys_tr.shape[0], Xs_tr.shape[0])
-    print(f"Running starter code implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
-    Ws_starter, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq, True)
-    print(f"Time taken for the above config is:  {time_taken}")
-    with open(params_output_f, 'w+') as fout:
-        for param in W:
-            s = "["
-            for val in param:
-                s += str(val) + ","
-            s = s[:-1] + "]"
-            fout.write(s)
-    print("\nPart 2 complete.\n")
-
+    # W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    # print(f"Running starter code implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
+    # Ws_starter, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq, True)
+    # print(f"Time taken for the above config is:  {time_taken}")
+    # with open(params_output_f, 'w+') as fout:
+    #     for param in W:
+    #         s = "["
+    #         for val in param:
+    #             s += str(val) + ","
+    #         s = s[:-1] + "]"
+    #         fout.write(s)
+    # print("\nPart 2 complete.\n")
+    # print((Xs_te[:,0]))
+    # exit(0)
     # Part 3
     print(f"{DIVIDER}\nRunning part 3 ...\n")
     W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
@@ -290,36 +293,36 @@ if __name__ == "__main__":
     print(f"Running numpy implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
     Ws_numpy, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
     print(f"Time taken for the above config is:  {time_taken}")
-    assert(len(Ws_numpy) == 101)
+    # assert(len(Ws_numpy) == 101)
 
     loss_np_te, error_np_te = [], []
     for w in Ws_numpy:
         # Accumulate losses
+        # loss_np_tr += [multinomial_logreg_total_loss(Xs_tr, Ys_tr, gamma, w)]
         loss_np_te += [multinomial_logreg_total_loss(Xs_te, Ys_te, gamma, w)]
+        # print(loss_np_te)
         # Accumulate errors
+        # error_np_tr += [multinomial_logreg_error(Xs_tr, Ys_tr, w)]
         error_np_te += [multinomial_logreg_error(Xs_te, Ys_te, w)]
+        # print(error_np_te)
 
     plt.plot(range(numberIter//monitorFreq+1), loss)
     plt.savefig("results/loss_np_tr_"+str(numberIter)+".png")
-    plt.close()
     plt.plot(range(numberIter//monitorFreq+1), error)
     plt.savefig("results/error_np_tr_"+str(numberIter)+".png")
-    plt.close()
     plt.plot(range(numberIter//monitorFreq+1), loss_np_te)
     plt.savefig("results/loss_np_te_"+str(numberIter)+".png")
-    plt.close()
     plt.plot(range(numberIter//monitorFreq+1), error_np_te)
     plt.savefig("results/error_np_te_"+str(numberIter)+".png")
-    plt.close()
 
 
     num_ex = 100
-    ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_starter[-1], num_ex)
+    ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_numpy[-1], num_ex)
     print(f"Estimated error from starter, nsamples={num_ex}: {ret}")
     ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_numpy[-1], num_ex)
     print(f"Estimated error from numpy,nsamples={num_ex}: {ret}")
     num_ex = 1000
-    ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_starter[-1], num_ex)
+    ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_numpy[-1], num_ex)
     print(f"Estimated error from starter, nsamples={num_ex}: {ret}")
     ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_numpy[-1], num_ex)
     print(f"Estimated error from numpy,nsamples={num_ex}: {ret}")
