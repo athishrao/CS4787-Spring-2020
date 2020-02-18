@@ -282,6 +282,33 @@ if __name__ == "__main__":
 
     # Part 4
     print(f"{DIVIDER}\nRunning part 4 ...\n")
+    numberIter = 1000
+    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    print(f"Running numpy implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
+    Ws_numpy, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
+    print(f"Time taken for the above config is:  {time_taken}")
+    assert(len(Ws_numpy) == 101)
+
+    loss_np_tr, error_np_tr = [], []
+    loss_np_te, error_np_te = [], []
+    for w in Ws_numpy:
+        # Accumulate losses
+        loss_np_tr += [multinomial_logreg_total_loss(Xs_tr, Ys_tr, gamma, w)]
+        loss_np_te += [multinomial_logreg_total_loss(Xs_te, Ys_te, gamma, w)]
+        # Accumulate errors
+        error_np_tr += [multinomial_logreg_error(Xs_tr, Ys_tr, w)]
+        error_np_te += [multinomial_logreg_error(Xs_te, Ys_te, w)]
+
+    plt.plot(range(numberIter//monitorFreq+1), loss_np_tr)
+    plt.savefig("results/loss_np_tr_"+str(numberIter)+".png")
+    plt.plot(range(numberIter//monitorFreq+1), error_np_tr)
+    plt.savefig("results/error_np_tr_"+str(numberIter)+".png")
+    plt.plot(range(numberIter//monitorFreq+1), loss_np_te)
+    plt.savefig("results/loss_np_te_"+str(numberIter)+".png")
+    plt.plot(range(numberIter//monitorFreq+1), error_np_te)
+    plt.savefig("results/error_np_te_"+str(numberIter)+".png")
+
+
     num_ex = 100
     ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_starter[-1], num_ex)
     print(f"Estimated error from starter, nsamples={num_ex}: {ret}")
@@ -292,8 +319,4 @@ if __name__ == "__main__":
     print(f"Estimated error from starter, nsamples={num_ex}: {ret}")
     ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_numpy[-1], num_ex)
     print(f"Estimated error from numpy,nsamples={num_ex}: {ret}")
-    print("\nPart 3 complete.\n")
-
-    # plt.plot(range(1,numberIter//monitorFreq+1), loss)
-    # plt.plot(range(1,numberIter//monitorFreq+1), error)
-    # plt.savefig("myGraphi_"+str(numberIter)+".png")
+    print("\nPart 4 complete.\n")
