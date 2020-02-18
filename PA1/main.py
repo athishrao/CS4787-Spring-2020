@@ -201,6 +201,8 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq, starter=
             error.append(multinomial_logreg_error(Xs, Ys, W0))
             loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
         W0 -= alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
+    error.append(multinomial_logreg_error(Xs, Ys, W0))
+    loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
     params.append(W0)
     end_time = datetime.datetime.now()
     return params, loss, error, end_time - start_time
@@ -260,6 +262,7 @@ if __name__ == "__main__":
     numberIter = 10
     monitorFreq = 10
     W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    # W = np.random.rand(Ys_tr.shape[0], Xs_tr.shape[0])
     print(f"Running starter code implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
     Ws_starter, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq, True)
     print(f"Time taken for the above config is:  {time_taken}")
@@ -289,24 +292,25 @@ if __name__ == "__main__":
     print(f"Time taken for the above config is:  {time_taken}")
     assert(len(Ws_numpy) == 101)
 
-    loss_np_tr, error_np_tr = [], []
     loss_np_te, error_np_te = [], []
     for w in Ws_numpy:
         # Accumulate losses
-        loss_np_tr += [multinomial_logreg_total_loss(Xs_tr, Ys_tr, gamma, w)]
         loss_np_te += [multinomial_logreg_total_loss(Xs_te, Ys_te, gamma, w)]
         # Accumulate errors
-        error_np_tr += [multinomial_logreg_error(Xs_tr, Ys_tr, w)]
         error_np_te += [multinomial_logreg_error(Xs_te, Ys_te, w)]
 
-    plt.plot(range(numberIter//monitorFreq+1), loss_np_tr)
+    plt.plot(range(numberIter//monitorFreq+1), loss)
     plt.savefig("results/loss_np_tr_"+str(numberIter)+".png")
-    plt.plot(range(numberIter//monitorFreq+1), error_np_tr)
+    plt.close()
+    plt.plot(range(numberIter//monitorFreq+1), error)
     plt.savefig("results/error_np_tr_"+str(numberIter)+".png")
+    plt.close()
     plt.plot(range(numberIter//monitorFreq+1), loss_np_te)
     plt.savefig("results/loss_np_te_"+str(numberIter)+".png")
+    plt.close()
     plt.plot(range(numberIter//monitorFreq+1), error_np_te)
     plt.savefig("results/error_np_te_"+str(numberIter)+".png")
+    plt.close()
 
 
     num_ex = 100
