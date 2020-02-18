@@ -291,6 +291,7 @@ if __name__ == "__main__":
     print(f"Estimated error from starter, nsamples={num_ex}: {ret}")
     ret = estimate_multinomial_logreg_error(Xs_tr, Ys_tr, Ws_numpy[-1], num_ex)
     print(f"Estimated error from numpy,nsamples={num_ex}: {ret}")
+    exit()
 
     plt.plot(range(1,numberIter//monitorFreq+1), loss)
     plt.plot(range(1,numberIter//monitorFreq+1), error)
