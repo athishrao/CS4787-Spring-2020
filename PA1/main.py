@@ -215,7 +215,13 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq, starter=
 # returns   the estimated model error when sampling with replacement
 def estimate_multinomial_logreg_error(Xs, Ys, W, nsamples):
     # TODO students should implement this
-    pass
+    X_sub, Y_sub = Xs.T, Ys.T
+    x_y_zipped = list(zip(X_sub, Y_sub))
+    random.shuffle(x_y_zipped)
+    X_sub, Y_sub = zip(*x_y_zipped)
+    X_sub, Y_sub = X_sub[:nsamples], Y_sub[:nsamples]
+    estimated_error = multinomial_logreg_error(X_sub, Y_sub, W)
+    return estimated_error
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
@@ -226,15 +232,15 @@ if __name__ == "__main__":
 
     DIVIDER = "#"*20
 
-    # Part 1
-    print(f"{DIVIDER}\nRunning part 1 ...\n")
-    gamma = 0.0001
-    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
-    alpha = [10**-1, 10**-3, 10**-5]
-    for a in alpha:
-        ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
-        print(f"For alpha={a}, average difference is: {ret}")
-    print("\nPart 1 complete .\n")
+    # # Part 1
+    # print(f"{DIVIDER}\nRunning part 1 ...\n")
+    # gamma = 0.0001
+    # W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    # alpha = [10**-1, 10**-3, 10**-5]
+    # for a in alpha:
+    #     ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
+    #     print(f"For alpha={a}, average difference is: {ret}")
+    # print("\nPart 1 complete .\n")
 
     #Pass one example into function_i
     # x = Xs_tr[:,8]
@@ -245,33 +251,37 @@ if __name__ == "__main__":
     # test_gradient(x, y, gamma, W)
     #Pass Entire Dataset
 
-    # Part 2
-    print(f"{DIVIDER}\nRunning part 2 ...\n")
-    params_output_f = "results/params_out.txt"
-    gamma = 0.0001
-    alpha = 1.0
-    numberIter = 10
-    monitorFreq = 10
-    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
-    print(f"Running starter code implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
-    W, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq, True)
-    print(f"Time taken for the above config is:  {time_taken}")
-    with open(params_output_f, 'w+') as fout:
-        for param in W:
-            s = "["
-            for val in param:
-                s += str(val) + ","
-            s = s[:-1] + "]"
-            fout.write(s)
-    print("\nPart 2 complete.\n")
+    # # Part 2
+    # print(f"{DIVIDER}\nRunning part 2 ...\n")
+    # params_output_f = "results/params_out.txt"
+    # gamma = 0.0001
+    # alpha = 1.0
+    # numberIter = 10
+    # monitorFreq = 10
+    # W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    # print(f"Running starter code implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
+    # W, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq, True)
+    # print(f"Time taken for the above config is:  {time_taken}")
+    # with open(params_output_f, 'w+') as fout:
+    #     for param in W:
+    #         s = "["
+    #         for val in param:
+    #             s += str(val) + ","
+    #         s = s[:-1] + "]"
+    #         fout.write(s)
+    # print("\nPart 2 complete.\n")
+    #
+    # # Part 3
+    # print(f"{DIVIDER}\nRunning part 3 ...\n")
+    # W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
+    # print(f"Running numpy implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
+    # W, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
+    # print(f"Time taken for the above config is:  {time_taken}")
+    # print("\nPart 3 complete.\n")
 
-    # Part 3
-    print(f"{DIVIDER}\nRunning part 3 ...\n")
-    W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
-    print(f"Running numpy implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
-    W, loss, error, time_taken = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
-    print(f"Time taken for the above config is:  {time_taken}")
-    print("\nPart 3 complete.\n")
+    # Part 4
+    print(estimate_multinomial_logreg_error(Xs, Ys, W, 100))
+    exit()
 
     plt.plot(range(1,numberIter//monitorFreq+1), loss)
     plt.plot(range(1,numberIter//monitorFreq+1), error)
