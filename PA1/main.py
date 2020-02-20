@@ -195,12 +195,7 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq, starter=
     for i in range(num_iters):
         if (i % monitor_freq == 0):
             params.append(W0)
-            # error.append(multinomial_logreg_error(Xs, Ys, W0))
-            # loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
-        # print(alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter))
         W0 = W0 - alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
-        # if ((W0 - params[-1]).all() == 0):
-        #     print("same")
     params.append(W0)
     error.append(multinomial_logreg_error(Xs, Ys, W0))
     loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
@@ -230,7 +225,7 @@ if __name__ == "__main__":
     Xs_tr, Xs_te, Ys_tr, Ys_te = np.matrix(Xs_tr), np.matrix(Xs_te), np.matrix(Ys_tr), np.matrix(Ys_te)
     print("Shape of initial X:", Xs_tr.shape)
     print("Shape of initial Y:", Ys_tr.shape)
-    
+
     DIVIDER = "#"*20
 
     # Part 1
@@ -242,7 +237,7 @@ if __name__ == "__main__":
         ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
         print(f"For alpha={a}, average difference is: {ret}")
     print("\nPart 1 complete .\n")
-    
+
 
     # Part 2
     print(f"{DIVIDER}\nRunning part 2 ...\n")
@@ -251,7 +246,7 @@ if __name__ == "__main__":
     numberIter = 10
     monitorFreq = 10
     W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
-    
+
     print(f"Running starter code implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
     start = datetime.datetime.now()
     Ws_starter = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq, True)
@@ -262,7 +257,7 @@ if __name__ == "__main__":
     print(f"{DIVIDER}\nRunning part 3 ...\n")
     W = np.zeros([Ys_tr.shape[0], Xs_tr.shape[0]])
     end = datetime.datetime.now()
-    
+
     print(f"Running numpy implementation config: alpha={alpha}, gamma={gamma}, #iterations={numberIter}, monitorFreq={monitorFreq}")
     start = datetime.datetime.now()
     Ws_numpy = gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, numberIter, monitorFreq)
@@ -297,29 +292,29 @@ if __name__ == "__main__":
     end = datetime.datetime.now()
     print("\nRunning time to obtain training error with subsampling 1000 samples on a single model is:", end - start)
 
-    
+
     for w in Ws_numpy:
 
         loss.append(multinomial_logreg_total_loss(Xs_tr, Ys_tr, gamma, w))
         loss_np_te += [multinomial_logreg_total_loss(Xs_te, Ys_te, gamma, w)]
-        
+
         error.append(multinomial_logreg_error(Xs_tr, Ys_tr, w))
         error_np_te += [multinomial_logreg_error(Xs_te, Ys_te, w)]
-        
+
         num_ex = 100
         est_err_tr_100.append(estimate_multinomial_logreg_error(Xs_tr, Ys_tr, w, num_ex))
         est_err_te_100.append(estimate_multinomial_logreg_error(Xs_te, Ys_te, w, num_ex))
-        
+
         num_ex = 1000
         est_err_tr_1000.append(estimate_multinomial_logreg_error(Xs_tr, Ys_tr, w, num_ex))
         est_err_te_1000.append(estimate_multinomial_logreg_error(Xs_te, Ys_te, w, num_ex))
-        
+
 
 
     plt.plot(range(numberIter//monitorFreq+1), loss_np_te)
     plt.savefig("results/entire_ds_loss_test_"+str(numberIter)+".png")
     plt.close()
-    
+
     plt.plot(range(numberIter//monitorFreq+1), error_np_te)
     plt.savefig("results/entire_ds_error_test_"+str(numberIter)+".png")
     plt.close()
@@ -335,7 +330,7 @@ if __name__ == "__main__":
     plt.plot(range(numberIter//monitorFreq+1), est_err_tr_100)
     plt.savefig("results/subsample_100_estimated_err_train_"+str(numberIter)+".png")
     plt.close()
-    
+
     plt.plot(range(numberIter//monitorFreq+1), est_err_tr_1000)
     plt.savefig("results/subsample_1000_estimated_err_train_"+str(numberIter)+".png")
     plt.close()
@@ -343,7 +338,7 @@ if __name__ == "__main__":
     plt.plot(range(numberIter//monitorFreq+1), est_err_te_100)
     plt.savefig("results/subsample_100_estimated_err_test_"+str(numberIter)+".png")
     plt.close()
-    
+
     plt.plot(range(numberIter//monitorFreq+1), est_err_te_1000)
     plt.savefig("results/subsample_1000_estimated_err_test_"+str(numberIter)+".png")
     plt.close()
