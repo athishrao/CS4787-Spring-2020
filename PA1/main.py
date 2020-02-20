@@ -195,12 +195,7 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq, starter=
     for i in range(num_iters):
         if (i % monitor_freq == 0):
             params.append(W0)
-            # error.append(multinomial_logreg_error(Xs, Ys, W0))
-            # loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
-        # print(alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter))
         W0 = W0 - alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
-        # if ((W0 - params[-1]).all() == 0):
-        #     print("same")
     params.append(W0)
     error.append(multinomial_logreg_error(Xs, Ys, W0))
     loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
@@ -243,7 +238,6 @@ if __name__ == "__main__":
         ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
         print(f"For alpha={a}, average difference is: {ret}")
     print("\nPart 1 complete .\n")
-
 
     # Part 2
     print(f"{DIVIDER}\nRunning part 2 ...\n")
