@@ -213,7 +213,8 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_iters, monitor_freq, starter=
 def estimate_multinomial_logreg_error(Xs, Ys, W, nsamples):
     # TODO students should implement this
     X_sub, Y_sub = Xs.T, Ys.T
-    perm = [np.random.randint(0,Xs.shape[1]) for _ in range(nsamples) ]
+    n = Xs.shape[1]
+    perm = [np.random.randint(0,n) for _ in range(nsamples) ]
     X_sub = Xs.T[perm]
     Y_sub = Ys.T[perm]
     estimated_error = multinomial_logreg_error(X_sub.T, Y_sub.T, W)
@@ -237,7 +238,6 @@ if __name__ == "__main__":
         ret = test_gradient(Xs_tr, Ys_tr, gamma, W, a)
         print(f"For alpha={a}, average difference is: {ret}")
     print("\nPart 1 complete .\n")
-
 
     # Part 2
     print(f"{DIVIDER}\nRunning part 2 ...\n")
@@ -292,7 +292,6 @@ if __name__ == "__main__":
     end = datetime.datetime.now()
     print("\nRunning time to obtain training error with subsampling 1000 samples on a single model is:", end - start)
 
-
     for w in Ws_numpy:
 
         loss.append(multinomial_logreg_total_loss(Xs_tr, Ys_tr, gamma, w))
@@ -308,8 +307,6 @@ if __name__ == "__main__":
         num_ex = 1000
         est_err_tr_1000.append(estimate_multinomial_logreg_error(Xs_tr, Ys_tr, w, num_ex))
         est_err_te_1000.append(estimate_multinomial_logreg_error(Xs_te, Ys_te, w, num_ex))
-
-
 
     plt.plot(range(numberIter//monitorFreq+1), loss_np_te)
     plt.savefig("results/entire_ds_loss_test_"+str(numberIter)+".png")
