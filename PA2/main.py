@@ -144,7 +144,7 @@ def sgd_sequential_scan(Xs, Ys, gamma, W, alpha, num_epochs, monitor_period):
 def sgd_minibatch(Xs, Ys, gamma, W, alpha, B, num_epochs, monitor_period):
     # TODO students should implement this
     params = []
-    T = num_epochs * Xs.shape[1] / N
+    T = num_epochs
     for i in range(T):
         if i % monitor_period == 0:
             params.append(W)
@@ -174,7 +174,7 @@ def sgd_minibatch_sequential_scan(
     # TODO students should implement this
     params = []
     for t in range(num_epochs):
-        if i % monitor_period == 0:
+        if t % monitor_period == 0:
             params.append(W)
         ii = [(t * B + i) for i in range(B)]
         W = W - alpha * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
@@ -188,7 +188,7 @@ def run_experiment(pickle_file, algorithm_number, sgd_fn, sgd_args):
         print(
             f"Algorithm {algorithm_number} weights exist at {pickle_file}. SGD algo#{algorithm_number} skipped."
         )
-        algo_params = pickle.load(open(algo_1_pickle_file, "rb"))
+        W = pickle.load(open(pickle_file, "rb"))
         print(f"Algorithm {algorithm_number} params loaded")
     else:
         print(f"Running Algorithm {algorithm_number} ...")
@@ -200,7 +200,8 @@ def run_experiment(pickle_file, algorithm_number, sgd_fn, sgd_args):
         # ----- UNTESTED
         print(f"Algorithm {algorithm_number} complete.")
         print(f"Dumping params to {pickle_file} ...")
-        pickle.dump(algo_params, open(pickle_file, "wb"))
+        name = "pickle_files/algo"+str(algorithm_number)+".pickle"
+        pickle.dump(W, open(name, "wb"))
         print(f"Dumping complete.")
     return W
 
@@ -212,10 +213,10 @@ if __name__ == "__main__":
     print("Shape of initial Y:", Ys_tr.shape)
     DIVIDER = "#" * 20
     pickle_file_dir = "pickle_files"
-    algo_1_pickle_file = pickle_file_dir + "algo1.pickle"
-    algo_2_pickle_file = pickle_file_dir + "algo2.pickle"
-    algo_3_pickle_file = pickle_file_dir + "algo3.pickle"
-    algo_4_pickle_file = pickle_file_dir + "algo4.pickle"
+    algo_1_pickle_file = pickle_file_dir + "/algo1.pickle"
+    algo_2_pickle_file = pickle_file_dir + "/algo2.pickle"
+    algo_3_pickle_file = pickle_file_dir + "/algo3.pickle"
+    algo_4_pickle_file = pickle_file_dir + "/algo4.pickle"
 
     # Create pickle folder if not exists already
     if not os.path.isdir(pickle_file_dir):
@@ -229,8 +230,8 @@ if __name__ == "__main__":
     num_epochs = 10
     monitor_period = 1000
     algo_1_2_args = {
-        "Xs": Xs,
-        "Ys": Ys,
+        "Xs": Xs_tr,
+        "Ys": Ys_tr,
         "gamma": gamma,
         "alpha": alpha,
         "num_epochs": num_epochs,
@@ -248,8 +249,8 @@ if __name__ == "__main__":
     monitor_period = 1000
     B = 60
     algo_3_4_args = {
-        "Xs": Xs,
-        "Ys": Ys,
+        "Xs": Xs_tr,
+        "Ys": Ys_tr,
         "gamma": gamma,
         "alpha": alpha,
         "num_epochs": num_epochs,
