@@ -103,3 +103,6 @@ dmypy.json
 
 #Data
 data/
+
+#Pickle
+*.pickle
