@@ -125,7 +125,7 @@ def sgd_sequential_scan(Xs, Ys, gamma, W, alpha, num_epochs, monitor_period):
             if j % monitor_period == 0:
                 params.append(W)
             W = W - alpha * (multinomial_logreg_grad_i(Xs, Ys, [j], gamma, W))
-        params.append(W)
+    params.append(W)
     return params
 
 
@@ -144,7 +144,7 @@ def sgd_sequential_scan(Xs, Ys, gamma, W, alpha, num_epochs, monitor_period):
 def sgd_minibatch(Xs, Ys, gamma, W, alpha, B, num_epochs, monitor_period):
     # TODO students should implement this
     params = []
-    T = (num_epochs * n) // B
+    T = (num_epochs * Xs.shape[1]) // B
     for i in range(T):
         if i % monitor_period == 0:
             params.append(W)
@@ -175,7 +175,7 @@ def sgd_minibatch_sequential_scan(
     params = []
     for t in range(num_epochs):
         for j in range(Xs.shape[1] // B):
-            if t % monitor_period == 0:
+            if j % monitor_period == 0:
                 params.append(W)
             ii = [(j * B + i) for i in range(B)]
             W = W - alpha * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
@@ -209,7 +209,7 @@ def run_sgd(pickle_file, algorithm_number, sgd_fn, sgd_args):
 def get_error(Xs, Ys, params):
     errors = []
     for w in params:
-        error.append(multinomial_logreg_error(Xs, Ys, w))
+        errors.append(multinomial_logreg_error(Xs, Ys, w))
     return errors
 
 
@@ -298,7 +298,7 @@ if __name__ == "__main__":
         }
 
         print(f"\nDumping errors to {part_1_errs_pickle} ...")
-        pickle.dump(W, open(part_1_errs_pickle, "wb"))
+        pickle.dump(error_dict, open(part_1_errs_pickle, "wb"))
         print(f"Dumping complete.")
 
     else:
