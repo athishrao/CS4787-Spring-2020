@@ -24,18 +24,18 @@ def load_MNIST_dataset():
         mnist_data = mnist.MNIST(mnist_data_directory, return_type="numpy", gz=True)
         Xs_tr, Lbls_tr = mnist_data.load_training()
         Xs_tr = Xs_tr.transpose() / 255.0
-        Ys_tr = numpy.zeros((10, 60000))
+        Ys_tr = np.zeros((10, 60000))
         for i in range(60000):
             Ys_tr[Lbls_tr[i], i] = 1.0  # one-hot encode each label
-        Xs_tr = numpy.ascontiguousarray(Xs_tr)
-        Ys_tr = numpy.ascontiguousarray(Ys_tr)
+        Xs_tr = np.ascontiguousarray(Xs_tr)
+        Ys_tr = np.ascontiguousarray(Ys_tr)
         Xs_te, Lbls_te = mnist_data.load_testing()
         Xs_te = Xs_te.transpose() / 255.0
-        Ys_te = numpy.zeros((10, 10000))
+        Ys_te = np.zeros((10, 10000))
         for i in range(10000):
             Ys_te[Lbls_te[i], i] = 1.0  # one-hot encode each label
-        Xs_te = numpy.ascontiguousarray(Xs_te)
-        Ys_te = numpy.ascontiguousarray(Ys_te)
+        Xs_te = np.ascontiguousarray(Xs_te)
+        Ys_te = np.ascontiguousarray(Ys_te)
         dataset = (Xs_tr, Ys_tr, Xs_te, Ys_te)
         pickle.dump(dataset, open(PICKLE_FILE, "wb"))
     return dataset
@@ -144,7 +144,7 @@ def sgd_sequential_scan(Xs, Ys, gamma, W, alpha, num_epochs, monitor_period):
 def sgd_minibatch(Xs, Ys, gamma, W, alpha, B, num_epochs, monitor_period):
     # TODO students should implement this
     params = []
-    T = num_epochs
+    T = (num_epochs * n) // B
     for i in range(T):
         if i % monitor_period == 0:
             params.append(W)
@@ -174,15 +174,16 @@ def sgd_minibatch_sequential_scan(
     # TODO students should implement this
     params = []
     for t in range(num_epochs):
-        if t % monitor_period == 0:
-            params.append(W)
-        ii = [(t * B + i) for i in range(B)]
-        W = W - alpha * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
+        for j in range(Xs.shape[1] // B):
+            if t % monitor_period == 0:
+                params.append(W)
+            ii = [(j * B + i) for i in range(B)]
+            W = W - alpha * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
     params.append(W)
     return params
 
 
-def run_experiment(pickle_file, algorithm_number, sgd_fn, sgd_args):
+def run_sgd(pickle_file, algorithm_number, sgd_fn, sgd_args):
     print(f"\n{DIVIDER}\n")
     if os.path.isfile(pickle_file):
         print(
@@ -200,10 +201,23 @@ def run_experiment(pickle_file, algorithm_number, sgd_fn, sgd_args):
         # ----- UNTESTED
         print(f"Algorithm {algorithm_number} complete.")
         print(f"Dumping params to {pickle_file} ...")
-        name = "pickle_files/algo"+str(algorithm_number)+".pickle"
-        pickle.dump(W, open(name, "wb"))
+        pickle.dump(W, open(pickle_file, "wb"))
         print(f"Dumping complete.")
     return W
+
+
+def get_error(Xs, Ys, params):
+    errors = []
+    for w in params:
+        error.append(multinomial_logreg_error(Xs, Ys, w))
+    return errors
+
+
+def obtain_tr_te_errs(X_tr, Y_tr, X_te, Y_te, params, algo_num):
+    print(f"\nCalculating training and testing errors for {algo_num}... ")
+    ret = get_error(X_tr, Y_tr, params), get_error(X_te, Y_te, params)
+    print(f"Error collection complete. ")
+    return ret
 
 
 if __name__ == "__main__":
@@ -212,23 +226,23 @@ if __name__ == "__main__":
     print("Shape of initial X:", Xs_tr.shape)
     print("Shape of initial Y:", Ys_tr.shape)
     DIVIDER = "#" * 20
-    pickle_file_dir = "pickle_files"
-    algo_1_pickle_file = pickle_file_dir + "/algo1.pickle"
-    algo_2_pickle_file = pickle_file_dir + "/algo2.pickle"
-    algo_3_pickle_file = pickle_file_dir + "/algo3.pickle"
-    algo_4_pickle_file = pickle_file_dir + "/algo4.pickle"
+    pickle_file_dir = "pickle_files/"
+    algo_1_pickle_file = pickle_file_dir + "algo1.pickle"
+    algo_2_pickle_file = pickle_file_dir + "algo2.pickle"
+    algo_3_pickle_file = pickle_file_dir + "algo3.pickle"
+    algo_4_pickle_file = pickle_file_dir + "algo4.pickle"
 
     # Create pickle folder if not exists already
     if not os.path.isdir(pickle_file_dir):
         print("Pickle folder does not exist. Creating ...")
         os.makedirs(pickle_file_dir)
-        print(f"Creating {pickle_file_dir}.")
+        print(f"Created {pickle_file_dir}.")
 
     # Hyperparams for sgd algo 1 and 2
     gamma = 0.0001
     alpha = 0.001
     num_epochs = 10
-    monitor_period = 1000
+    monitor_period = 6000
     algo_1_2_args = {
         "Xs": Xs_tr,
         "Ys": Ys_tr,
@@ -237,16 +251,18 @@ if __name__ == "__main__":
         "num_epochs": num_epochs,
         "monitor_period": monitor_period,
     }
-    W = run_experiment(
-        algo_1_pickle_file, 1, stochastic_gradient_descent, algo_1_2_args
-    )
-    W = run_experiment(algo_2_pickle_file, 2, sgd_sequential_scan, algo_1_2_args)
+    W_1 = run_sgd(algo_1_pickle_file, 1, stochastic_gradient_descent, algo_1_2_args)
+    assert(len(W_1) == ((num_epochs * Xs_tr.shape[1]) // monitor_period) + 1)
+
+
+    W_2 = run_sgd(algo_2_pickle_file, 2, sgd_sequential_scan, algo_1_2_args)
+    assert(len(W_2) == ((num_epochs * Xs_tr.shape[1]) // monitor_period) + 1)
 
     # Hyperparams for sgd algo 1 and 2
     gamma = 0.0001
     alpha = 0.05
     num_epochs = 10
-    monitor_period = 1000
+    monitor_period = 100
     B = 60
     algo_3_4_args = {
         "Xs": Xs_tr,
@@ -258,22 +274,53 @@ if __name__ == "__main__":
         "B": B,
     }
 
-    W = run_experiment(algo_3_pickle_file, 3, sgd_minibatch, algo_3_4_args)
-    W = run_experiment(
-        algo_4_pickle_file, 4, sgd_minibatch_sequential_scan, algo_3_4_args
-    )
+    W_3 = run_sgd(algo_3_pickle_file, 3, sgd_minibatch, algo_3_4_args)
+    assert(len(W_3) == ((num_epochs * Xs_tr.shape[1]) // (monitor_period * B)) + 1)
 
-    #
-    # # params = stochastic_gradient_descent(Xs_tr, Ys_tr, gamma, W, alpha, num_epochs, monitor_period)
-    # error = []
-    # # error_np_te = 0
-    #
-    # params = pickle.load(open("W.pickle", "rb"))
-    # for w in params:
-    #     error.append(multinomial_logreg_error(Xs_tr, Ys_tr, w))
-    # pickle.dump(params, open( "W.pickle", "wb" ) )
-    #
-    # plt.plot(range(600+1), error)
-    # plt.savefig("results/entire_ds_error_train_"+str(1)+".png")
-    # plt.close()
-    # # return
+    W_4 = run_sgd(algo_4_pickle_file, 4, sgd_minibatch_sequential_scan, algo_3_4_args)
+    assert(len(W_4) == ((num_epochs * Xs_tr.shape[1]) // (monitor_period * B)) + 1)
+
+    part_1_errs_pickle = pickle_file_dir + "part1errs.pickle"
+    if not os.path.isfile(part_1_errs_pickle):
+        W_1_tr_err, W_1_te_err = obtain_tr_te_errs(Xs_tr, Ys_tr, Xs_te, Ys_te, W_1, 1)
+        W_2_tr_err, W_2_te_err = obtain_tr_te_errs(Xs_tr, Ys_tr, Xs_te, Ys_te, W_2, 2)
+        W_3_tr_err, W_3_te_err = obtain_tr_te_errs(Xs_tr, Ys_tr, Xs_te, Ys_te, W_3, 3)
+        W_4_tr_err, W_4_te_err = obtain_tr_te_errs(Xs_tr, Ys_tr, Xs_te, Ys_te, W_4, 4)
+        error_dict = {
+            "w1tr": W_1_tr_err,
+            "w1te": W_1_te_err,
+            "w2tr": W_2_tr_err,
+            "w2te": W_2_te_err,
+            "w3tr": W_3_tr_err,
+            "w3te": W_3_te_err,
+            "w4tr": W_4_tr_err,
+            "w4te": W_4_te_err,
+        }
+
+        print(f"\nDumping errors to {part_1_errs_pickle} ...")
+        pickle.dump(W, open(part_1_errs_pickle, "wb"))
+        print(f"Dumping complete.")
+
+    else:
+        error_dict = pickle.load(open(part_1_errs_pickle, "rb"))
+
+
+    figures_dir = "Figures/"
+    if not os.path.isdir(figures_dir):
+        print("Figures folder does not exist. Creating ...")
+        os.makedirs(figures_dir)
+        print(f"Created {figures_dir}.")
+
+    plt.plot(range(101), error_dict["w1tr"])
+    plt.plot(range(101), error_dict["w2tr"])
+    plt.plot(range(101), error_dict["w3tr"])
+    plt.plot(range(101), error_dict["w4tr"])
+    plt.savefig(figures_dir + "sgd_tr" + ".png")
+    plt.close()
+
+    plt.plot(range(101), error_dict["w1te"])
+    plt.plot(range(101), error_dict["w2te"])
+    plt.plot(range(101), error_dict["w3te"])
+    plt.plot(range(101), error_dict["w4te"])
+    plt.savefig(figures_dir + "sgd_te" + ".png")
+    plt.close()
