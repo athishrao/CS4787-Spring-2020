@@ -324,3 +324,30 @@ if __name__ == "__main__":
     plt.plot(range(101), error_dict["w4te"])
     plt.savefig(figures_dir + "sgd_te" + ".png")
     plt.close()
+
+
+    # ----- PART 2
+    # 1, 2
+    # LOGIC:
+    # Need: min tr error from W_1_tr_err
+    # Iterate over alphas
+    # Run SGD and obtain min training error reached using this alpha
+    # Compare with original alpha min training error
+    # GOAL: Find an alpha that finds err smaller than that of original alpha
+    # Find testing err for that ideal alpha
+
+    # alphas = [10**-1, 10**-2, 10**-4]
+    # for a in alphas:
+    #     algo_1_2_args["alpha"] = a
+
+    # 3
+    # Same thing as 1 but now we have only 5 epochs to try new alphas and achieve
+    # equal or better error than that of original alpha with 10 epochs
+    # run this alpha on test for 5 epochs and obtain error
+
+    # 4
+    # Same thing as 2 (5epochs vs 10 alphas) but for algorithm 4
+
+
+    # For at least three different algorithm configurations you explored in this Part, plot the resulting error against the number of epochs in two figures, one for Training error and one for Test error, just as you did for the evaluation in Part 1.
+    # If you found hyperparameters that improved the performance in Steps 2, 3, and 4, use those hyperparameters for these figures.
