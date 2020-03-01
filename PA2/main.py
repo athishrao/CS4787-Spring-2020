@@ -230,6 +230,18 @@ def print_runtime(N, algo_num, sgd_fn, sgd_fn_args):
     print(f"Avg Runtime for algorithm {algo_num} is : {(end-start)/N}")
 
 
+def alphaTuning(num_epochs, alphas, algo_arg, sgd_type, type_number):
+    name = "w"+str(type_number)+"tr"
+    print(f'\n Minimum error from original alpha: {min(error_dict[name])} for algorith {type_number}')
+    algo_arg["num_epochs"] = num_epochs
+    print(f'Performing hyperparam tuning with num_epochs={["num_epochs"]} and alphas={alphas} for algorith {type_number}')
+    minErrors = []
+    for i in alphas:
+        algo_arg["alpha"] = i
+        W = run_sgd("", type_number, sgd_type, algo_arg)
+        minErrors.append(min(get_error(Xs_tr, Ys_tr, W)))
+    print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
+
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
     # TODO add code to produce figures
@@ -326,14 +338,14 @@ if __name__ == "__main__":
     plt.plot(range(101), error_dict["w2tr"])
     plt.plot(range(101), error_dict["w3tr"])
     plt.plot(range(101), error_dict["w4tr"])
-    plt.savefig(figures_dir + "sgd_tr" + ".png")
+    plt.savefig(figures_dir + "sgd_tr_part_1" + ".png")
     plt.close()
 
     plt.plot(range(101), error_dict["w1te"])
     plt.plot(range(101), error_dict["w2te"])
     plt.plot(range(101), error_dict["w3te"])
     plt.plot(range(101), error_dict["w4te"])
-    plt.savefig(figures_dir + "sgd_te" + ".png")
+    plt.savefig(figures_dir + "sgd_te_part_1" + ".png")
     plt.close()
 
 
@@ -363,32 +375,57 @@ if __name__ == "__main__":
     # For at least three different algorithm configurations you explored in this Part, plot the resulting error against the number of epochs in two figures, one for Training error and one for Test error, just as you did for the evaluation in Part 1.
     # If you found hyperparameters that improved the performance in Steps 2, 3, and 4, use those hyperparameters for these figures.
 
-    # print(DIVIDER)
-    # print(f'\n Minimum error from original alpha: {min(error_dict["w1tr"])}')
+
+
+    # ----- SUBPART 2
     # alphas = [10**-2, 2.5*10**-3, 5*10**-3, 7.5*10**-3]
-    # print(f'Performing hyperparam tuning with {algo_1_2_args["num_epochs"]} and alphas={alphas}')
-    # minErrors = []
-    # for a in alphas:
-    #     algo_1_2_args["alpha"] = a
-    #     W1 = run_sgd("", 1, stochastic_gradient_descent, algo_1_2_args)
-    #     minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
-    # print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
-    #
-    # print(DIVIDER)
-    # print(f'\n Minimum error from original alpha: {min(error_dict["w1tr"])}')
+    # alphaTuning(10, alphas, algo_1_2_args, stochastic_gradient_descent, 1)
+
+    # ----- SUBPART 3
     # alphas = [0.01, 0.02, 0.03]
-    # algo_1_2_args["num_epochs"] = 5
-    # print(f'Performing hyperparam tuning with {algo_1_2_args["num_epochs"]} and alphas={alphas}')
-    # minErrors = []
-    # for i in alphas:
-    #     algo_1_2_args["alpha"] = i
-    #     W1 = run_sgd("", 1, stochastic_gradient_descent, algo_1_2_args)
-    #     minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
-    # print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
+    # alphaTuning(5, alphas, algo_1_2_args, stochastic_gradient_descent, 1)
+
+    # ----- SUBPART 4
+    # alphas = [0.1*i for i in range(4,9)]
+    # alphaTuning(5, alphas, algo_3_4_args, sgd_minibatch_sequential_scan, 4)
+
+    # ----- SUBPART 5
+    args_1 = args_2 = algo_1_2_args
+
+    alpha1 = 0.005
+    args_1["alpha"] = alpha1
+    args_1["num_epochs"] = 10
+    W1 = run_sgd("", 1, stochastic_gradient_descent, args_1)
+    E1_tr, E1_te = obtain_tr_te_errs(Xs_tr, Ys_tr, Xs_te, Ys_te, W_1, 1)
+    plt.plot(range(101), E1_tr)
+    plt.plot(range(101), E1_te)
+    plt.savefig(figures_dir + "sgd_1" + ".png")
+    plt.close()
+
+    alpha2 = 0.01
+    args_2["alpha"] = alpha2
+    args_2["num_epochs"] = 5
+    W2 = run_sgd("", 1, stochastic_gradient_descent, args_2)
+    E2_tr, E2_te = obtain_tr_te_errs(Xs_tr, Ys_tr, Xs_te, Ys_te, W_2, 1)
+    plt.plot(range(101), E2_tr)
+    plt.plot(range(101), E2_te)
+    plt.savefig(figures_dir + "sgd_2" + ".png")
+    plt.close()
+
+    args_3 = algo_3_4_args
+    alpha3 = 0.70
+    args_3["alpha"] = alpha3
+    args_3["num_epochs"] = 5
+    W3 = run_sgd("", 4, sgd_minibatch_sequential_scan, args_3)
+    E3_tr, E3_te = obtain_tr_te_errs(Xs_tr, Ys_tr, Xs_te, Ys_te, W_3, 4)
+    plt.plot(range(101), E3_tr)
+    plt.plot(range(101), E3_te)
+    plt.savefig(figures_dir + "sgd_3" + ".png")
+    plt.close()
 
     # ----- PART 3
-    N = 5
-    print_runtime(N, 1, stochastic_gradient_descent, algo_1_2_args)
-    print_runtime(N, 2, sgd_sequential_scan, algo_1_2_args)
-    print_runtime(N, 3, sgd_minibatch, algo_3_4_args)
-    print_runtime(N, 4, sgd_minibatch_sequential_scan, algo_3_4_args)
+    # N = 5
+    # print_runtime(N, 1, stochastic_gradient_descent, algo_1_2_args)
+    # print_runtime(N, 2, sgd_sequential_scan, algo_1_2_args)
+    # print_runtime(N, 3, sgd_minibatch, algo_3_4_args)
+    # print_runtime(N, 4, sgd_minibatch_sequential_scan, algo_3_4_args)
