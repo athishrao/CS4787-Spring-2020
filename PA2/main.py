@@ -5,6 +5,7 @@ import scipy
 import matplotlib
 import mnist
 import pickle
+import time
 
 matplotlib.use("agg")
 from matplotlib import pyplot as plt
@@ -364,16 +365,46 @@ if __name__ == "__main__":
     # print(minErrors)
     # print(list(zip(minErrors, alphas)))
 
-    print("\n" + "NOW FOR 5 EPOCHS")
-    print(min(error_dict["w1tr"]))
-    alphas = [0.01, 0.02, 0.03]
-    minErrors = []
-    algo_1_2_args["num_epochs"] = num_epochs
-    for i in alphas:
+    # print("\n" + "NOW FOR 5 EPOCHS")
+    # print(min(error_dict["w1tr"]))
+    # alphas = [0.01, 0.02, 0.03]
+    # minErrors = []
+    # algo_1_2_args["num_epochs"] = num_epochs
+    # for i in alphas:
+    #     os.remove(algo_1_pickle_file)
+    #     algo_1_2_args["alpha"] = i
+    #     W1 = run_sgd(algo_1_pickle_file, 1, stochastic_gradient_descent, algo_1_2_args)
+    #     minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
+    # os.remove(algo_1_pickle_file)
+    # print(minErrors)
+    # print(list(zip(minErrors, alphas)))
+
+    # ----- PART 3
+    N = 5
+    start = time.time()
+    for i in range(N):
         os.remove(algo_1_pickle_file)
-        algo_1_2_args["alpha"] = i
         W1 = run_sgd(algo_1_pickle_file, 1, stochastic_gradient_descent, algo_1_2_args)
-        minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
-    os.remove(algo_1_pickle_file)
-    print(minErrors)
-    print(list(zip(minErrors, alphas)))
+    end = time.time()
+    print("Avg Runtime for algorithm 1 is : ",(end-start)/5)
+
+    start = time.time()
+    for i in range(N):
+        os.remove(algo_2_pickle_file)
+        W1 = run_sgd(algo_2_pickle_file, 2, sgd_sequential_scan, algo_1_2_args)
+    end = time.time()
+    print("Avg Runtime for algorithm 2 is : ",(end-start)/5)
+
+    start = time.time()
+    for i in range(N):
+        os.remove(algo_3_pickle_file)
+        W1 = run_sgd(algo_3_pickle_file, 3, sgd_minibatch, algo_3_4_args)
+    end = time.time()
+    print("Avg Runtime for algorithm 3 is : ",(end-start)/5)
+
+    start = time.time()
+    for i in range(N):
+        os.remove(algo_4_pickle_file)
+        W1 = run_sgd(algo_4_pickle_file, 4, sgd_minibatch_sequential_scan, algo_3_4_args)
+    end = time.time()
+    print("Avg Runtime for algorithm 4 is : ",(end-start)/5)
