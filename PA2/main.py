@@ -377,7 +377,7 @@ if __name__ == "__main__":
     # TODO: Batch size tuning ? ?
     alphas = [0.1*i for i in range(4,9)]
     batch_sizes = [100, 120, 150]
-    hyperParamTuning(5, alphas, algo_3_4_args, sgd_minibatch_sequential_scan, 4)
+    hyperParamTuning(5, alphas, algo_3_4_args, sgd_minibatch_sequential_scan, 4, batch_sizes)
 
     # ----- SUBPART 5
     args_1 = args_2 = copy.copy(algo_1_2_args)
