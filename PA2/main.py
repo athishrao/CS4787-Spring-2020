@@ -231,7 +231,7 @@ def print_runtime(N, algo_num, sgd_fn, sgd_fn_args):
     print(f"Avg Runtime for algorithm {algo_num} is : {(end-start)/N}")
 
 
-def alphaTuning(num_epochs, alphas, algo_arg, sgd_type, type_number, batch_sizes=[]):
+def hyperParamTuning(num_epochs, alphas, algo_arg, sgd_type, type_number, batch_sizes=[]):
     name = f"w{str(type_number)}tr"
     print(f'\n Minimum error from original alpha: {min(error_dict[name])} for algorith {type_number}')
     algo_arg["num_epochs"] = num_epochs
@@ -367,16 +367,17 @@ if __name__ == "__main__":
 
     # ----- SUBPART 2
     alphas = [10**-2, 2.5*10**-3, 5*10**-3, 7.5*10**-3]
-    alphaTuning(10, alphas, algo_1_2_args, stochastic_gradient_descent, 1)
+    hyperParamTuning(10, alphas, algo_1_2_args, stochastic_gradient_descent, 1)
 
     # ----- SUBPART 3
     alphas = [0.01, 0.02, 0.03]
-    alphaTuning(5, alphas, algo_1_2_args, stochastic_gradient_descent, 1)
+    hyperParamTuning(5, alphas, algo_1_2_args, stochastic_gradient_descent, 1)
 
     # ----- SUBPART 4
     # TODO: Batch size tuning ? ?
     alphas = [0.1*i for i in range(4,9)]
-    alphaTuning(5, alphas, algo_3_4_args, sgd_minibatch_sequential_scan, 4)
+    batch_sizes = [100, 120, 150]
+    hyperParamTuning(5, alphas, algo_3_4_args, sgd_minibatch_sequential_scan, 4)
 
     # ----- SUBPART 5
     args_1 = args_2 = copy.copy(algo_1_2_args)
