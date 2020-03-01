@@ -231,7 +231,7 @@ def print_runtime(N, algo_num, sgd_fn, sgd_fn_args):
     print(f"Avg Runtime for algorithm {algo_num} is : {(end-start)/N}")
 
 
-def alphaTuning(num_epochs, alphas, algo_arg, sgd_type, type_number):
+def alphaTuning(num_epochs, alphas, algo_arg, sgd_type, type_number, batch_sizes=[]):
     name = f"w{str(type_number)}tr"
     print(f'\n Minimum error from original alpha: {min(error_dict[name])} for algorith {type_number}')
     algo_arg["num_epochs"] = num_epochs
@@ -239,9 +239,19 @@ def alphaTuning(num_epochs, alphas, algo_arg, sgd_type, type_number):
     minErrors = []
     for i in alphas:
         algo_arg["alpha"] = i
-        W = run_sgd("", type_number, sgd_type, algo_arg)
-        minErrors.append(min(get_error(Xs_tr, Ys_tr, W)))
-    print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
+        if batch_sizes:
+            for b in batch_sizes:
+                algo_arg["B"] = b
+                W = run_sgd("", type_number, sgd_type, algo_arg)
+                minErrors.append(min(get_error(Xs_tr, Ys_tr, W)))
+        else:
+            W = run_sgd("", type_number, sgd_type, algo_arg)
+            minErrors.append(min(get_error(Xs_tr, Ys_tr, W)))
+    if batch_sizes:
+        alph_batches = [[x,y] for x in alphas for y in batch_sizes]
+        print(f'\n(alpha, min_error, batchSize using that alpha and batch size)= {[a + [minErrors[i]] for i, a in enumerate(alph_batches)]}\n')
+    else:
+        print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
