@@ -2,3 +2,34 @@
 
 
 [(0.07426666666666666, 0.01), (0.0772, 0.02), (0.08321666666666666, 0.03)]
+
+
+Running Algorithm 1 ...
+Algorithm 1 complete.
+Dumping params to pickle_files/algo1.pickle ...
+Dumping complete.
+Avg Runtime for algorithm 1 is :  27.505480813980103
+
+####################
+
+Running Algorithm 2 ...
+Algorithm 2 complete.
+Dumping params to pickle_files/algo2.pickle ...
+Dumping complete.
+Avg Runtime for algorithm 2 is :  24.44593620300293
+
+####################
+
+Running Algorithm 3 ...
+Algorithm 3 complete.
+Dumping params to pickle_files/algo3.pickle ...
+Dumping complete.
+Avg Runtime for algorithm 3 is :  3.175343561172485
+
+####################
+
+Running Algorithm 4 ...
+Algorithm 4 complete.
+Dumping params to pickle_files/algo4.pickle ...
+Dumping complete.
+Avg Runtime for algorithm 4 is :  1.0713202476501464

@@ -5,6 +5,7 @@ import scipy
 import matplotlib
 import mnist
 import pickle
+import time
 
 matplotlib.use("agg")
 from matplotlib import pyplot as plt
@@ -185,7 +186,7 @@ def sgd_minibatch_sequential_scan(
 
 def run_sgd(pickle_file, algorithm_number, sgd_fn, sgd_args):
     print(f"\n{DIVIDER}\n")
-    if os.path.isfile(pickle_file):
+    if pickle_file and os.path.isfile(pickle_file):
         print(
             f"Algorithm {algorithm_number} weights exist at {pickle_file}. SGD algo#{algorithm_number} skipped."
         )
@@ -218,6 +219,14 @@ def obtain_tr_te_errs(X_tr, Y_tr, X_te, Y_te, params, algo_num):
     ret = get_error(X_tr, Y_tr, params), get_error(X_te, Y_te, params)
     print(f"Error collection complete. ")
     return ret
+
+
+def print_runtime(N, algo_num, sgd_fn, sgd_fn_args):
+    start = time.time()
+    for i in range(N):
+        W1 = run_sgd("", algo_num, sgd_fn, sgd_fn_args)
+    end = time.time()
+    print(f"Avg Runtime for algorithm {algo_num} is : {(end-start)/N}")
 
 
 if __name__ == "__main__":
@@ -353,25 +362,32 @@ if __name__ == "__main__":
     # For at least three different algorithm configurations you explored in this Part, plot the resulting error against the number of epochs in two figures, one for Training error and one for Test error, just as you did for the evaluation in Part 1.
     # If you found hyperparameters that improved the performance in Steps 2, 3, and 4, use those hyperparameters for these figures.
 
-    print(DIVIDER)
-    print(f'\n Minimum error from original alpha: {min(error_dict["w1tr"])}')
-    alphas = [10**-2, 2.5*10**-3, 5*10**-3, 7.5*10**-3]
-    print(f'Performing hyperparam tuning with {algo_1_2_args["num_epochs"]} and alphas={alphas}')
-    minErrors = []
-    for a in alphas:
-        algo_1_2_args["alpha"] = a
-        W1 = run_sgd("", 1, stochastic_gradient_descent, algo_1_2_args)
-        minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
-    print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
+    # print(DIVIDER)
+    # print(f'\n Minimum error from original alpha: {min(error_dict["w1tr"])}')
+    # alphas = [10**-2, 2.5*10**-3, 5*10**-3, 7.5*10**-3]
+    # print(f'Performing hyperparam tuning with {algo_1_2_args["num_epochs"]} and alphas={alphas}')
+    # minErrors = []
+    # for a in alphas:
+    #     algo_1_2_args["alpha"] = a
+    #     W1 = run_sgd("", 1, stochastic_gradient_descent, algo_1_2_args)
+    #     minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
+    # print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
+    #
+    # print(DIVIDER)
+    # print(f'\n Minimum error from original alpha: {min(error_dict["w1tr"])}')
+    # alphas = [0.01, 0.02, 0.03]
+    # algo_1_2_args["num_epochs"] = 5
+    # print(f'Performing hyperparam tuning with {algo_1_2_args["num_epochs"]} and alphas={alphas}')
+    # minErrors = []
+    # for i in alphas:
+    #     algo_1_2_args["alpha"] = i
+    #     W1 = run_sgd("", 1, stochastic_gradient_descent, algo_1_2_args)
+    #     minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
+    # print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
 
-    print(DIVIDER)
-    print(f'\n Minimum error from original alpha: {min(error_dict["w1tr"])}')
-    alphas = [0.01, 0.02, 0.03]
-    algo_1_2_args["num_epochs"] = 5
-    print(f'Performing hyperparam tuning with {algo_1_2_args["num_epochs"]} and alphas={alphas}')
-    minErrors = []
-    for i in alphas:
-        algo_1_2_args["alpha"] = i
-        W1 = run_sgd("", 1, stochastic_gradient_descent, algo_1_2_args)
-        minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
-    print(f'\n(alpha, min_error using that alpha)= {list(zip(alphas, minErrors))}\n')
+    # ----- PART 3
+    N = 5
+    print_runtime(N, 1, stochastic_gradient_descent, algo_1_2_args)
+    print_runtime(N, 2, sgd_sequential_scan, algo_1_2_args)
+    print_runtime(N, 3, sgd_minibatch, algo_3_4_args)
+    print_runtime(N, 4, sgd_minibatch_sequential_scan, algo_3_4_args)
