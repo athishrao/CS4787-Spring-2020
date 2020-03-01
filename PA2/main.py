@@ -201,9 +201,10 @@ def run_sgd(pickle_file, algorithm_number, sgd_fn, sgd_args):
         W = sgd_fn(**sgd_args)
         # ----- UNTESTED
         print(f"Algorithm {algorithm_number} complete.")
-        print(f"Dumping params to {pickle_file} ...")
-        pickle.dump(W, open(pickle_file, "wb"))
-        print(f"Dumping complete.")
+        if pickle_file:
+            print(f"Dumping params to {pickle_file} ...")
+            pickle.dump(W, open(pickle_file, "wb"))
+            print(f"Dumping complete.")
     return W
 
 
