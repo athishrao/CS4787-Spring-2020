@@ -310,7 +310,8 @@ if __name__ == "__main__":
         print("Figures folder does not exist. Creating ...")
         os.makedirs(figures_dir)
         print(f"Created {figures_dir}.")
-
+    plt.yticks(np.arange(0.02,0.2,0.05))
+    plt.gca().set_ylim([0,0.25])
     plt.plot(range(101), error_dict["w1tr"])
     plt.plot(range(101), error_dict["w2tr"])
     plt.plot(range(101), error_dict["w3tr"])
@@ -351,3 +352,28 @@ if __name__ == "__main__":
 
     # For at least three different algorithm configurations you explored in this Part, plot the resulting error against the number of epochs in two figures, one for Training error and one for Test error, just as you did for the evaluation in Part 1.
     # If you found hyperparameters that improved the performance in Steps 2, 3, and 4, use those hyperparameters for these figures.
+    # print(min(error_dict["w1tr"]))
+    # alphas = [10**-2, 2.5*10**-3, 5*10**-3, 7.5*10**-3]
+    # minErrors = []
+    # for i in alphas:
+    #     os.remove(algo_1_pickle_file)
+    #     algo_1_2_args["alpha"] = i
+    #     W1 = run_sgd(algo_1_pickle_file, 1, stochastic_gradient_descent, algo_1_2_args)
+    #     minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
+    # os.remove(algo_1_pickle_file)
+    # print(minErrors)
+    # print(list(zip(minErrors, alphas)))
+
+    print("\n" + "NOW FOR 5 EPOCHS")
+    print(min(error_dict["w1tr"]))
+    alphas = [0.01, 0.02, 0.03]
+    minErrors = []
+    algo_1_2_args["num_epochs"] = num_epochs
+    for i in alphas:
+        os.remove(algo_1_pickle_file)
+        algo_1_2_args["alpha"] = i
+        W1 = run_sgd(algo_1_pickle_file, 1, stochastic_gradient_descent, algo_1_2_args)
+        minErrors.append(min(get_error(Xs_tr, Ys_tr, W1)))
+    os.remove(algo_1_pickle_file)
+    print(minErrors)
+    print(list(zip(minErrors, alphas)))
