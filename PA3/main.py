@@ -110,6 +110,16 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_epochs, monitor_period):
 # returns         a list of model parameters, one every "monitor_period" epochs
 def gd_nesterov(Xs, Ys, gamma, W0, alpha, beta, num_epochs, monitor_period):
     # TODO students should implement this
+    vt = W0
+    monitored_params = []
+    for i in range(num_epochs):
+        if i % monitor_period == 0:
+            monitored_params += [W0]
+        vt_prev = vt
+        vt = W0 - alpha * multinomial_logreg_grad_i(Xs, Ys, list(range(Xs.shape[1])), gamma, W)
+        W0 = vt + beta * (vt - vt_prev)
+    return monitored_params
+
 
 
 # SGD: run stochastic gradient descent with minibatching and sequential sampling order (SAME AS PROGRAMMING ASSIGNMENT 2)
