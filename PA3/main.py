@@ -94,7 +94,12 @@ def multinomial_logreg_error(Xs, Ys, W):
 # returns   the model cross-entropy loss
 def multinomial_logreg_loss(Xs, Ys, gamma, W):
     # TODO students should implement this
-    pass
+    yHat = softmax(np.dot(W,x))
+    yHat = np.log(yHat)
+    ans = -1 * np.dot(y.T, yHat)
+    ans += (gamma/2)*(np.linalg.norm(W, 'fro'))**2
+    ans = ans.item()
+    return ans
 
 # gradient descent (SAME AS PROGRAMMING ASSIGNMENT 1)
 #
@@ -109,7 +114,17 @@ def multinomial_logreg_loss(Xs, Ys, gamma, W):
 # returns         a list of model parameters, one every "monitor_period" epochs
 def gradient_descent(Xs, Ys, gamma, W0, alpha, num_epochs, monitor_period):
     # TODO students should use their implementation from programming assignment 1
-    pass
+    params = []
+    loss = []
+    error = []
+    for i in range(num_iters):
+        if (i % monitor_freq == 0):
+            params.append(W0)
+        W0 = W0 - alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
+    params.append(W0)
+    error.append(multinomial_logreg_error(Xs, Ys, W0))
+    loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
+    return params
 
 # gradient descent with nesterov momentum
 #
@@ -125,7 +140,17 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_epochs, monitor_period):
 # returns         a list of model parameters, one every "monitor_period" epochs
 def gd_nesterov(Xs, Ys, gamma, W0, alpha, beta, num_epochs, monitor_period):
     # TODO students should implement this
-    pass
+    params = []
+    loss = []
+    error = []
+    for i in range(num_iters):
+        if (i % monitor_freq == 0):
+            params.append(W0)
+        W0 = W0 - alpha*multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
+    params.append(W0)
+    error.append(multinomial_logreg_error(Xs, Ys, W0))
+    loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
+    return params
 
 # SGD: run stochastic gradient descent with minibatching and sequential sampling order (SAME AS PROGRAMMING ASSIGNMENT 2)
 #
@@ -141,7 +166,15 @@ def gd_nesterov(Xs, Ys, gamma, W0, alpha, beta, num_epochs, monitor_period):
 # returns         a list of model parameters, one every "monitor_period" batches
 def sgd_minibatch_sequential_scan(Xs, Ys, gamma, W0, alpha, B, num_epochs, monitor_period):
     # TODO students should use their implementation from programming assignment 2
-    pass
+    params = []
+    for t in range(num_epochs):
+        for j in range(Xs.shape[1] // B):
+            if j % monitor_period == 0:
+                params.append(W)
+            ii = [(j * B + i) for i in range(B)]
+            W = W - alpha * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
+    params.append(W)
+    return params
 
 # SGD + Momentum: add momentum to the previous algorithm
 #
@@ -158,7 +191,20 @@ def sgd_minibatch_sequential_scan(Xs, Ys, gamma, W0, alpha, B, num_epochs, monit
 # returns         a list of model parameters, one every "monitor_period" batches
 def sgd_mss_with_momentum(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs, monitor_period):
     # TODO students should implement this
-    pass
+    params = []
+    W = W0
+    v = 0
+    d,n = Xs.shape
+    for t in range(0, num_epochs):
+        for i in range(n//B-1):
+            if i % monitor_period == 0:
+                params.append(W)
+            ii = [(j * B + i) for i in range(B)]
+            g = (1/B)*(multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
+            v = beta*v - alpha*g
+            W = W + v
+    params.append(W)
+    return params
 
 # Adam Optimizer
 #
@@ -177,7 +223,27 @@ def sgd_mss_with_momentum(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs, monitor
 # returns         a list of model parameters, one every "monitor_period" batches
 def adam(Xs, Ys, gamma, W0, alpha, rho1, rho2, B, eps, num_epochs, monitor_period):
     # TODO students should implement this
-    pass
+    params = []
+    d,n = Xs.shape
+    t = 0
+    s = [0 for i in range(d)]
+    r = [0 for i in range(d)]
+    for k in range(0,num_epochs):
+        for i in range(n//B-1):
+            if i % monitor_period == 0:
+                params.append(W)
+            t += 1
+            ii = [(j * B + i) for i in range(B)]
+            g = (1/B)*(multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
+            for j in range(d):
+                s[j] = rho1*s[j] + (1-rho1)*g[j]
+                r[j] = rho2*r[j] + (1-rho2)*g[j]**2
+            s_cap = s/(1-(rho1**t))
+            r_cap = r/(1-(rho2**t))
+            for j in range(d):
+                W0[j] = W0[j] - (alpha*s[j])/np.sqrt(r[j]+eps)
+    params.append(W0)
+    return params
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
