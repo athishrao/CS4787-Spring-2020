@@ -273,21 +273,14 @@ def adam(Xs, Ys, gamma, W0, alpha, rho1, rho2, B, eps, num_epochs, monitor_perio
                 r[j] = rho2 * r[j] + (1 - rho2) * g[j] ** 2
             s_cap = np.matrix([i/(1 - (rho1 ** t)) for i in s])
             r_cap = np.matrix([i/(1 - (rho2 ** t)) for i in r])
-
-            print("B", W0[0])
             W0 = W0.T
+            W_temp = []
             for j in range(d):
-                # print("W0[j] before", W0.T[j])
-                # print("s_cap[j]", s_cap[j].shape)
                 terms1 = W0[j].reshape(1,-1)
                 terms2 = ((alpha * s_cap[j]) / np.sqrt(r_cap[j] + eps)).reshape(1,-1)
-                # print("Bef", W0[j])
-                W0[j] = terms1 - terms2
-                # print((alpha * s_cap[j]) / np.sqrt(r_cap[j] + eps))
-                # print("W0[j] after", W0[j]==terms1)
-                # print("Aft", W0[j])
-            W0 = W0.T
-            print("A", W0[0])
+                W_temp.append(terms1 - terms2)
+            W_temp = np.array(W_temp)
+            W0 = W_temp.reshape(W0.shape[1],d)
     params.append(W0)
     return params
 
@@ -389,60 +382,60 @@ if __name__ == "__main__":
         nesterov_gd_args,
     )
 
-    # TODO: Part 1.7 (Athish)
-    gd_tr_err, gd_te_err = (get_error(Xs_tr, Ys_tr, w_gd), get_error(Xs_tr, Ys_tr, w_gd))
-
-    nesterov_gd_09_tr_err, nesterov_gd_09_te_err = (get_error(Xs_tr, Ys_tr, w_nest_09), get_error(Xs_tr, Ys_tr, w_nest_09))
-
-    nesterov_gd_99_tr_err, nesterov_gd_99_te_err = (get_error(Xs_tr, Ys_tr, w_nest_099), get_error(Xs_tr, Ys_tr, w_nest_099))
-
-    # # TODO: Part 1.8 (Athish)
+    # # TODO: Part 1.7 (Athish)
+    # gd_tr_err, gd_te_err = (get_error(Xs_tr, Ys_tr, w_gd), get_error(Xs_te, Ys_te, w_gd))
+    #
+    # nesterov_gd_09_tr_err, nesterov_gd_09_te_err = (get_error(Xs_tr, Ys_tr, w_nest_09), get_error(Xs_te, Ys_te, w_nest_09))
+    #
+    # nesterov_gd_99_tr_err, nesterov_gd_99_te_err = (get_error(Xs_tr, Ys_tr, w_nest_099), get_error(Xs_te, Ys_te, w_nest_099))
+    #
+    # # # TODO: Part 1.8 (Athish)
     figures_dir = "Figures/"
-    if not os.path.isdir(figures_dir):
-        print("Figures folder does not exist. Creating ...")
-        os.makedirs(figures_dir)
-        print(f"Created {figures_dir}.")
-    plt.plot(range(len(w_gd)), gd_tr_err)
-    plt.savefig(figures_dir + "gd_tr" + "_1.8_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_gd)), gd_te_err)
-    plt.savefig(figures_dir + "gd_te" + "_1.8_" + ".png")
-    plt.close()
-
-    plt.plot(range(len(w_nest_09)), nesterov_gd_09_tr_err)
-    plt.savefig(figures_dir + "nesterov_gd_09_tr_err" + "_1.8_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_nest_09)), nesterov_gd_09_te_err)
-    plt.savefig(figures_dir + "nesterov_gd_09_te_err" + "_1.8_" + ".png")
-    plt.close()
-
-    plt.plot(range(len(w_nest_099)), nesterov_gd_99_tr_err)
-    plt.savefig(figures_dir + "nesterov_gd_99_tr_err" + "_1.8_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_nest_099)), nesterov_gd_99_te_err)
-    plt.savefig(figures_dir + "nesterov_gd_99_te_err" + "_1.8_" + ".png")
-    plt.close()
-
-    # # Part 1.9
-    gd_time, nes_time = time_gd / 5, time_nest / 5
-    for i in range(4):
-        _, t_nest = run_gd(
-            Xs_tr,
-            Ys_tr,
-            nesterov_pickle_file + "_beta_099",
-            "nesterov_beta_099",
-            gd_nesterov,
-            nesterov_gd_args,
-            True,
-        )
-        _, t_gd = run_gd(
-            Xs_tr, Ys_tr, gd_pickle_file, "basic_gd", gradient_descent, gd_args, True
-        )
-        gd_time += t_gd / 5
-        nes_time += t_nest / 5
-    print(DIVIDER)
-    print(f"Average time for Basic GD for 5 total runs is: {gd_time}")
-    print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
+    # if not os.path.isdir(figures_dir):
+    #     print("Figures folder does not exist. Creating ...")
+    #     os.makedirs(figures_dir)
+    #     print(f"Created {figures_dir}.")
+    # plt.plot(range(len(w_gd)), gd_tr_err)
+    # plt.savefig(figures_dir + "gd_tr" + "_1.8_" + ".png")
+    # plt.close()
+    # plt.plot(range(len(w_gd)), gd_te_err)
+    # plt.savefig(figures_dir + "gd_te" + "_1.8_" + ".png")
+    # plt.close()
+    #
+    # plt.plot(range(len(w_nest_09)), nesterov_gd_09_tr_err)
+    # plt.savefig(figures_dir + "nesterov_gd_09_tr_err" + "_1.8_" + ".png")
+    # plt.close()
+    # plt.plot(range(len(w_nest_09)), nesterov_gd_09_te_err)
+    # plt.savefig(figures_dir + "nesterov_gd_09_te_err" + "_1.8_" + ".png")
+    # plt.close()
+    #
+    # plt.plot(range(len(w_nest_099)), nesterov_gd_99_tr_err)
+    # plt.savefig(figures_dir + "nesterov_gd_99_tr_err" + "_1.8_" + ".png")
+    # plt.close()
+    # plt.plot(range(len(w_nest_099)), nesterov_gd_99_te_err)
+    # plt.savefig(figures_dir + "nesterov_gd_99_te_err" + "_1.8_" + ".png")
+    # plt.close()
+    #
+    # # # Part 1.9
+    # gd_time, nes_time = time_gd / 5, time_nest / 5
+    # for i in range(4):
+    #     _, t_nest = run_gd(
+    #         Xs_tr,
+    #         Ys_tr,
+    #         nesterov_pickle_file + "_beta_099",
+    #         "nesterov_beta_099",
+    #         gd_nesterov,
+    #         nesterov_gd_args,
+    #         True,
+    #     )
+    #     _, t_gd = run_gd(
+    #         Xs_tr, Ys_tr, gd_pickle_file, "basic_gd", gradient_descent, gd_args, True
+    #     )
+    #     gd_time += t_gd / 5
+    #     nes_time += t_nest / 5
+    # print(DIVIDER)
+    # print(f"Average time for Basic GD for 5 total runs is: {gd_time}")
+    # print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
 
     # TODO Part 1.10 (Unassigned)
 
@@ -493,61 +486,61 @@ if __name__ == "__main__":
         momentum_sgd_args,
     )
 
-    # TODO: Part 2.4 (Athish)
-    sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_tr, Ys_tr, w_sgd))
-
-    sgd_momen_09_tr_err, sgd_momen_09_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_09), get_error(Xs_tr, Ys_tr, w_sgd_momen_09))
-
-    sgd_momen_99_tr_err, sgd_momen_99_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_099), get_error(Xs_tr, Ys_tr, w_sgd_momen_099))
-
-    # TODO: Part 2.5 (Athish)
-    plt.plot(range(len(w_sgd)), sgd_tr_err)
-    plt.savefig(figures_dir + "sgd_tr_err" + "_2.5_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_sgd)), sgd_te_err)
-    plt.savefig(figures_dir + "sgd_te_err" + "_2.5_" + ".png")
-    plt.close()
-
-    plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_tr_err)
-    plt.savefig(figures_dir + "sgd_momen_09_tr_err" + "_2.5_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_te_err)
-    plt.savefig(figures_dir + "sgd_momen_09_te_err" + "_2.5_" + ".png")
-    plt.close()
-
-    plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_tr_err)
-    plt.savefig(figures_dir + "sgd_momen_99_tr_err" + "_2.5_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_te_err)
-    plt.savefig(figures_dir + "sgd_momen_99_te_err" + "_2.5_" + ".png")
-    plt.close()
-
-    Part 2.6
-    sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
-    for i in range(4):
-        _, t_momen = run_gd(
-            Xs_tr,
-            Ys_tr,
-            momen_sgd_pickle_file + "_beta_099",
-            "momen_sgd_beta_099",
-            sgd_mss_with_momentum,
-            momentum_sgd_args,
-            True,
-        )
-        _, t_sgd = run_gd(
-            Xs_tr,
-            Ys_tr,
-            sgd_pickle_file,
-            "basic_sgd",
-            sgd_minibatch_sequential_scan,
-            sgd_args,
-            True,
-        )
-        sgd_time += t_sgd / 5
-        sgd_momen_time += t_momen / 5
-    print(DIVIDER)
-    print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
-    print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
+    # # TODO: Part 2.4 (Athish)
+    # sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_te, Ys_te, w_sgd))
+    #
+    # sgd_momen_09_tr_err, sgd_momen_09_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_09), get_error(Xs_te, Ys_te, w_sgd_momen_09))
+    #
+    # sgd_momen_99_tr_err, sgd_momen_99_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_099), get_error(Xs_te, Ys_te, w_sgd_momen_099))
+    #
+    # # TODO: Part 2.5 (Athish)
+    # plt.plot(range(len(w_sgd)), sgd_tr_err)
+    # plt.savefig(figures_dir + "sgd_tr_err" + "_2.5_" + ".png")
+    # plt.close()
+    # plt.plot(range(len(w_sgd)), sgd_te_err)
+    # plt.savefig(figures_dir + "sgd_te_err" + "_2.5_" + ".png")
+    # plt.close()
+    #
+    # plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_tr_err)
+    # plt.savefig(figures_dir + "sgd_momen_09_tr_err" + "_2.5_" + ".png")
+    # plt.close()
+    # plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_te_err)
+    # plt.savefig(figures_dir + "sgd_momen_09_te_err" + "_2.5_" + ".png")
+    # plt.close()
+    #
+    # plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_tr_err)
+    # plt.savefig(figures_dir + "sgd_momen_99_tr_err" + "_2.5_" + ".png")
+    # plt.close()
+    # plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_te_err)
+    # plt.savefig(figures_dir + "sgd_momen_99_te_err" + "_2.5_" + ".png")
+    # plt.close()
+    #
+    # Part 2.6
+    # sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
+    # for i in range(4):
+    #     _, t_momen = run_gd(
+    #         Xs_tr,
+    #         Ys_tr,
+    #         momen_sgd_pickle_file + "_beta_099",
+    #         "momen_sgd_beta_099",
+    #         sgd_mss_with_momentum,
+    #         momentum_sgd_args,
+    #         True,
+    #     )
+    #     _, t_sgd = run_gd(
+    #         Xs_tr,
+    #         Ys_tr,
+    #         sgd_pickle_file,
+    #         "basic_sgd",
+    #         sgd_minibatch_sequential_scan,
+    #         sgd_args,
+    #         True,
+    #     )
+    #     sgd_time += t_sgd / 5
+    #     sgd_momen_time += t_momen / 5
+    # print(DIVIDER)
+    # print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
+    # print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
 
     # TODO: Part 2.7 (Unassigned)
 
@@ -568,9 +561,9 @@ if __name__ == "__main__":
     )
 
     # TODO: Part 3.3 (Athish)
-    sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_tr, Ys_tr, w_sgd))
+    sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_te, Ys_te, w_sgd))
 
-    sgd_adam_tr_err, sgd_adam_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_adam), get_error(Xs_tr, Ys_tr, w_sgd_adam))
+    sgd_adam_tr_err, sgd_adam_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_adam), get_error(Xs_te, Ys_te, w_sgd_adam))
 
     # TODO: Part 3.4 (Athish)
     plt.plot(range(len(w_sgd)), sgd_tr_err)
