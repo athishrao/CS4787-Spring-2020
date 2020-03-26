@@ -293,6 +293,11 @@ def run_gd(
             print(f"Dumping complete.")
     return W, time_taken
 
+def get_error(Xs, Ys, params):
+    errors = []
+    for w in params:
+        errors.append(multinomial_logreg_error(Xs, Ys, w))
+    return errors
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
@@ -341,8 +346,38 @@ if __name__ == "__main__":
     )
 
     # TODO: Part 1.7 (Athish)
+    gd_tr_err, gd_te_err = (get_error(X_tr, Y_tr, w_gd), get_error(X_tr, Y_tr, w_gd))
+
+    nesterov_gd_09_tr_err, nesterov_gd_09_te_err = (get_error(X_tr, Y_tr, w_nest_09), get_error(X_tr, Y_tr, w_nest_09))
+
+    nesterov_gd_99_tr_err, nesterov_gd_99_te_err = (get_error(X_tr, Y_tr, w_nest_99), get_error(X_tr, Y_tr, w_nest_99))
 
     # TODO: Part 1.8 (Athish)
+    figures_dir = "Figures/"
+    if not os.path.isdir(figures_dir):
+        print("Figures folder does not exist. Creating ...")
+        os.makedirs(figures_dir)
+        print(f"Created {figures_dir}.")
+    plt.plot(range(len(w_gd)), gd_tr_err)
+    plt.savefig(figures_dir + "gd_tr" + "_1.8_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_gd)), gd_te_err)
+    plt.savefig(figures_dir + "gd_te" + "_1.8_" + ".png")
+    plt.close()
+
+    plt.plot(range(len(w_nest_09)), nesterov_gd_09_tr_err)
+    plt.savefig(figures_dir + "nesterov_gd_09_tr_err" + "_1.8_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_nest_09)), nesterov_gd_09_te_err)
+    plt.savefig(figures_dir + "nesterov_gd_09_te_err" + "_1.8_" + ".png")
+    plt.close()
+
+    plt.plot(range(len(w_nest_99)), nesterov_gd_99_tr_err)
+    plt.savefig(figures_dir + "nesterov_gd_99_tr_err" + "_1.8_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_nest_99)), nesterov_gd_99_te_err)
+    plt.savefig(figures_dir + "nesterov_gd_99_te_err" + "_1.8_" + ".png")
+    plt.close()
 
     # Part 1.9
     gd_time, nes_time = time_gd / 5, time_nest / 5
@@ -415,8 +450,33 @@ if __name__ == "__main__":
     )
 
     # TODO: Part 2.4 (Athish)
+    sgd_tr_err, sgd_te_err = (get_error(X_tr, Y_tr, w_sgd), get_error(X_tr, Y_tr, w_sgd))
+
+    sgd_momen_09_tr_err, sgd_momen_09_te_err = (get_error(X_tr, Y_tr, w_sgd_momen_09), get_error(X_tr, Y_tr, w_sgd_momen_09))
+
+    sgd_momen_99_tr_err, sgd_momen_99_te_err = (get_error(X_tr, Y_tr, w_sgd_momen_99), get_error(X_tr, Y_tr, w_sgd_momen_99))
 
     # TODO: Part 2.5 (Athish)
+    plt.plot(range(len(w_sgd)), sgd_tr_err)
+    plt.savefig(figures_dir + "sgd_tr_err" + "_2.5_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_sgd)), sgd_te_err)
+    plt.savefig(figures_dir + "sgd_te_err" + "_2.5_" + ".png")
+    plt.close()
+
+    plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_tr_err)
+    plt.savefig(figures_dir + "sgd_momen_09_tr_err" + "_2.5_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_te_err)
+    plt.savefig(figures_dir + "sgd_momen_09_te_err" + "_2.5_" + ".png")
+    plt.close()
+
+    plt.plot(range(len(w_sgd_momen_99)), sgd_momen_99_tr_err)
+    plt.savefig(figures_dir + "sgd_momen_99_tr_err" + "_2.5_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_sgd_momen_99)), sgd_momen_99_te_err)
+    plt.savefig(figures_dir + "sgd_momen_99_te_err" + "_2.5_" + ".png")
+    plt.close()
 
     # Part 2.6
     sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
@@ -464,8 +524,24 @@ if __name__ == "__main__":
     )
 
     # TODO: Part 3.3 (Athish)
+    sgd_tr_err, sgd_te_err = (get_error(X_tr, Y_tr, w_sgd), get_error(X_tr, Y_tr, w_sgd))
+
+    sgd_adam_tr_err, sgd_momen_09_te_err = (get_error(X_tr, Y_tr, w_sgd_adam), get_error(X_tr, Y_tr, w_sgd_adam))
 
     # TODO: Part 3.4 (Athish)
+    plt.plot(range(len(w_sgd)), sgd_tr_err)
+    plt.savefig(figures_dir + "sgd_tr_err" + "_3.3_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_sgd)), sgd_te_err)
+    plt.savefig(figures_dir + "sgd_te_err" + "_3.3_" + ".png")
+    plt.close()
+
+    plt.plot(range(len(w_sgd_adam)), sgd_adam_tr_err)
+    plt.savefig(figures_dir + "sgd_adam_tr_err" + "_3.3_" + ".png")
+    plt.close()
+    plt.plot(range(len(w_sgd_adam)), sgd_adam_te_err)
+    plt.savefig(figures_dir + "sgd_adam_te_err" + "_3.3_" + ".png")
+    plt.close()
 
     # Part 3.5
     sgd_adam_time = time_adam / 5
