@@ -106,3 +106,6 @@ data/
 
 #Pickle
 *.pickle
+pickle_files/
+Figures/
+*.txt

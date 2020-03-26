@@ -9,7 +9,7 @@ import time
 import pickle
 
 matplotlib.use("agg")
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 
 from scipy.special import softmax
 
@@ -53,10 +53,10 @@ def load_MNIST_dataset():
 # Ys        training labels   (c * n)
 # ii        the list/vector of indexes of the training example to compute the gradient with respect to
 # gamma     L2 regularization constant
-# W         parameters        (c * d)
+# W0         parameters        (c * d)
 #
 # returns   the average gradient of the regularized loss of the examples in vector ii with respect to the model parameters
-def multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W):
+def multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0):
     # TODO students should use their implementation from programming assignment 2
     Xs = Xs.T
     Ys = Ys.T
@@ -64,8 +64,8 @@ def multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W):
     totalLoss = 0
     X_batch = Xs[ii]
     Y_batch = Ys[ii]
-    yHat = softmax(np.matmul(W, X_batch.T), axis=0) - Y_batch.T
-    ans = np.matmul(yHat, X_batch) + gamma * W
+    yHat = softmax(np.matmul(W0, X_batch.T), axis=0) - Y_batch.T
+    ans = np.matmul(yHat, X_batch) + gamma * W0
     return ans / batchSize
 
 
@@ -73,13 +73,13 @@ def multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W):
 #
 # Xs        examples          (d * n)
 # Ys        labels            (c * n)
-# W         parameters        (c * d)
+# W0         parameters        (c * d)
 #
 # returns   the model error as a percentage of incorrect labels
-def multinomial_logreg_error(Xs, Ys, W):
+def multinomial_logreg_error(Xs, Ys, W0):
     # TODO students should use their implementation from programming assignment 1
     Ys = Ys.T
-    yHat = softmax(np.dot(W, Xs), axis=0).T
+    yHat = softmax(np.dot(W0, Xs), axis=0).T
     count = 0
     for i in range(len(Ys)):
         pred = np.argmax(yHat[i])
@@ -93,15 +93,15 @@ def multinomial_logreg_error(Xs, Ys, W):
 # Xs        examples          (d * n)
 # Ys        labels            (c * n)
 # gamma     L2 regularization constant
-# W         parameters        (c * d)
+# W0         parameters        (c * d)
 #
 # returns   the model cross-entropy loss
-def multinomial_logreg_loss(Xs, Ys, gamma, W):
+def multinomial_logreg_loss(Xs, Ys, gamma, W0):
     # TODO students should implement this
-    yHat = softmax(np.dot(W, x))
+    yHat = softmax(np.dot(W0, x))
     yHat = np.log(yHat)
     ans = -1 * np.dot(y.T, yHat)
-    ans += (gamma / 2) * (np.linalg.norm(W, "fro")) ** 2
+    ans += (gamma / 2) * (np.linalg.norm(W0, "fro")) ** 2
     ans = ans.item()
     return ans
 
@@ -141,18 +141,40 @@ def gradient_descent(Xs, Ys, gamma, W0, alpha, num_epochs, monitor_period):
 # monitor_period  how frequently, in terms of epochs/iterations to output the parameter vector
 #
 # returns         a list of model parameters, one every "monitor_period" epochs
+def multinomial_logreg_total_grad(Xs, Ys, gamma, W0):
+    # TODO students should implement this
+    # a starter solution using an average of the example gradients
+    (d,n) = Xs.shape
+    ret = 0
+    # ----- NUMPY CODE
+    y_hat = softmax(np.dot(W0,Xs), axis=0)
+    del_L = np.dot(y_hat - Ys, Xs.T)
+    ret = del_L + gamma*W0
+    return ret / n
+def multinomial_logreg_total_loss(Xs, Ys, gamma, W0):
+    # TODO students should implement this
+    # a starter solution using an average of the example gradients
+    (d,n) = Xs.shape
+    ret = 0
+    # Numpy Code
+    y_hat = softmax(np.dot(W0,Xs), axis=0)
+    log_y_hat = -1 * np.log(y_hat)
+    y_dot_y_hat = np.multiply(log_y_hat, Ys)
+    L_y_y_hat = np.sum(y_dot_y_hat)
+    ret = L_y_y_hat + (gamma/2)*(np.linalg.norm(W0, 'fro'))**2
+    return ret / n
 def gd_nesterov(Xs, Ys, gamma, W0, alpha, beta, num_epochs, monitor_period):
     # TODO students should implement this
     params = []
     loss = []
     error = []
-    for i in range(num_iters):
+    for i in range(num_epochs):
         if i % monitor_freq == 0:
             params.append(W0)
-        W0 = W0 - alpha * multinomial_logreg_total_grad(Xs, Ys, gamma, W0, starter)
+        W0 = W0 - alpha * multinomial_logreg_total_grad(Xs, Ys, gamma, W0)
     params.append(W0)
     error.append(multinomial_logreg_error(Xs, Ys, W0))
-    loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0, starter))
+    loss.append(multinomial_logreg_total_loss(Xs, Ys, gamma, W0))
     return params
 
 
@@ -176,10 +198,10 @@ def sgd_minibatch_sequential_scan(
     for t in range(num_epochs):
         for j in range(Xs.shape[1] // B):
             if j % monitor_period == 0:
-                params.append(W)
+                params.append(W0)
             ii = [(j * B + i) for i in range(B)]
-            W = W - alpha * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
-    params.append(W)
+            W0 = W0 - alpha * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
+    params.append(W0)
     return params
 
 
@@ -201,18 +223,18 @@ def sgd_mss_with_momentum(
 ):
     # TODO students should implement this
     params = []
-    W = W0
+    W0 = W0
     v = 0
     d, n = Xs.shape
     for t in range(0, num_epochs):
         for i in range(n // B - 1):
             if i % monitor_period == 0:
-                params.append(W)
-            ii = [(j * B + i) for i in range(B)]
-            g = (1 / B) * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
+                params.append(W0)
+            ii = [(i * B + j) for j in range(B)]
+            g = (1 / B) * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
             v = beta * v - alpha * g
-            W = W + v
-    params.append(W)
+            W0 = W0 + v
+    params.append(W0)
     return params
 
 
@@ -241,17 +263,31 @@ def adam(Xs, Ys, gamma, W0, alpha, rho1, rho2, B, eps, num_epochs, monitor_perio
     for k in range(0, num_epochs):
         for i in range(n // B - 1):
             if i % monitor_period == 0:
-                params.append(W)
+                params.append(W0)
             t += 1
-            ii = [(j * B + i) for i in range(B)]
-            g = (1 / B) * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W))
+            ii = [(i * B + j) for j in range(B)]
+            g = (1 / B) * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
+            g = g.T
             for j in range(d):
                 s[j] = rho1 * s[j] + (1 - rho1) * g[j]
                 r[j] = rho2 * r[j] + (1 - rho2) * g[j] ** 2
-            s_cap = s / (1 - (rho1 ** t))
-            r_cap = r / (1 - (rho2 ** t))
+            s_cap = np.matrix([i/(1 - (rho1 ** t)) for i in s])
+            r_cap = np.matrix([i/(1 - (rho2 ** t)) for i in r])
+
+            print("B", W0[0])
+            W0 = W0.T
             for j in range(d):
-                W0[j] = W0[j] - (alpha * s[j]) / np.sqrt(r[j] + eps)
+                # print("W0[j] before", W0.T[j])
+                # print("s_cap[j]", s_cap[j].shape)
+                terms1 = W0[j].reshape(1,-1)
+                terms2 = ((alpha * s_cap[j]) / np.sqrt(r_cap[j] + eps)).reshape(1,-1)
+                # print("Bef", W0[j])
+                W0[j] = terms1 - terms2
+                # print((alpha * s_cap[j]) / np.sqrt(r_cap[j] + eps))
+                # print("W0[j] after", W0[j]==terms1)
+                # print("Aft", W0[j])
+            W0 = W0.T
+            print("A", W0[0])
     params.append(W0)
     return params
 
@@ -266,32 +302,32 @@ def run_gd(
     ignore_pickle=False,
 ):
     print(f"\n{DIVIDER}\n")
-    time_taken = None
+    time_taken = 0
     if pickle_file and os.path.isfile(pickle_file) and not ignore_pickle:
         print(
             f"Algorithm {algorithm_identifier} weights exist at {pickle_file}. Algorithm - {algorithm_identifier} skipped."
         )
-        W = pickle.load(open(pickle_file, "rb"))
+        W0 = pickle.load(open(pickle_file, "rb"))
         print(f"Algorithm {algorithm_identifier} params loaded")
     else:
         print(f"Running Algorithm {algorithm_identifier} ...")
 
-        W = np.zeros([Ys_inp.shape[0], Xs_inp.shape[0]])
+        W0 = np.zeros([Ys_inp.shape[0], Xs_inp.shape[0]])
         start = time.time()
 
-        gd_args["W0"] = W
+        gd_args["W0"] = W0
         gd_args["Xs"] = Xs_inp
         gd_args["Ys"] = Ys_inp
-        W = gd_fn(**gd_args)
+        W0 = gd_fn(**gd_args)
 
         end = time.time()
         time_taken = end - start
         print(f"Algorithm {algorithm_identifier} complete. Time taken: {time_taken}")
         if not ignore_pickle:
             print(f"Dumping params to {pickle_file} ...")
-            pickle.dump(W, open(pickle_file, "wb"))
+            pickle.dump(W0, open(pickle_file, "wb"))
             print(f"Dumping complete.")
-    return W, time_taken
+    return W0, time_taken
 
 def get_error(Xs, Ys, params):
     errors = []
@@ -302,18 +338,26 @@ def get_error(Xs, Ys, params):
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
     pickle_file_dir = "pickle_files/"
+    # Create pickle folder if not exists already
+    if not os.path.isdir(pickle_file_dir):
+        print("Pickle folder does not exist. Creating ...")
+        os.makedirs(pickle_file_dir)
+        print(f"Created {pickle_file_dir}.")
     DIVIDER = "#" * 20
 
     # --------------- PART 1 BEGINS ---------------
-    gd_pickle_file = pickle_file_dir + "gd"
-    nesterov_pickle_file = pickle_file_dir + "nesterov"
+    gd_pickle_file = pickle_file_dir + "gd.pickle"
+    nesterov_pickle_file = pickle_file_dir + "nesterov.pickle"
     gamma = 10 ** -4
     alpha = 1.0
     num_epochs = 100
-    monitor_freq = 100
+    monitor_freq = 1
 
     # Part 1.6
     gd_args = {
+        "Xs": Xs_tr,
+        "Ys": Ys_tr,
+        "W0": 0,
         "gamma": gamma,
         "alpha": alpha,
         "num_epochs": num_epochs,
@@ -329,7 +373,7 @@ if __name__ == "__main__":
     w_nest_09, time_nest = run_gd(
         Xs_tr,
         Ys_tr,
-        nesterov_pickle_file + "_beta_09",
+        nesterov_pickle_file + "_beta_09.pickle",
         "nesterov_beta_09",
         gd_nesterov,
         nesterov_gd_args,
@@ -339,20 +383,20 @@ if __name__ == "__main__":
     w_nest_099, time_nest = run_gd(
         Xs_tr,
         Ys_tr,
-        nesterov_pickle_file + "_beta_099",
+        nesterov_pickle_file + "_beta_099.pickle",
         "nesterov_beta_099",
         gd_nesterov,
         nesterov_gd_args,
     )
 
     # TODO: Part 1.7 (Athish)
-    gd_tr_err, gd_te_err = (get_error(X_tr, Y_tr, w_gd), get_error(X_tr, Y_tr, w_gd))
+    gd_tr_err, gd_te_err = (get_error(Xs_tr, Ys_tr, w_gd), get_error(Xs_tr, Ys_tr, w_gd))
 
-    nesterov_gd_09_tr_err, nesterov_gd_09_te_err = (get_error(X_tr, Y_tr, w_nest_09), get_error(X_tr, Y_tr, w_nest_09))
+    nesterov_gd_09_tr_err, nesterov_gd_09_te_err = (get_error(Xs_tr, Ys_tr, w_nest_09), get_error(Xs_tr, Ys_tr, w_nest_09))
 
-    nesterov_gd_99_tr_err, nesterov_gd_99_te_err = (get_error(X_tr, Y_tr, w_nest_99), get_error(X_tr, Y_tr, w_nest_99))
+    nesterov_gd_99_tr_err, nesterov_gd_99_te_err = (get_error(Xs_tr, Ys_tr, w_nest_099), get_error(Xs_tr, Ys_tr, w_nest_099))
 
-    # TODO: Part 1.8 (Athish)
+    # # TODO: Part 1.8 (Athish)
     figures_dir = "Figures/"
     if not os.path.isdir(figures_dir):
         print("Figures folder does not exist. Creating ...")
@@ -372,14 +416,14 @@ if __name__ == "__main__":
     plt.savefig(figures_dir + "nesterov_gd_09_te_err" + "_1.8_" + ".png")
     plt.close()
 
-    plt.plot(range(len(w_nest_99)), nesterov_gd_99_tr_err)
+    plt.plot(range(len(w_nest_099)), nesterov_gd_99_tr_err)
     plt.savefig(figures_dir + "nesterov_gd_99_tr_err" + "_1.8_" + ".png")
     plt.close()
-    plt.plot(range(len(w_nest_99)), nesterov_gd_99_te_err)
+    plt.plot(range(len(w_nest_099)), nesterov_gd_99_te_err)
     plt.savefig(figures_dir + "nesterov_gd_99_te_err" + "_1.8_" + ".png")
     plt.close()
 
-    # Part 1.9
+    # # Part 1.9
     gd_time, nes_time = time_gd / 5, time_nest / 5
     for i in range(4):
         _, t_nest = run_gd(
@@ -405,7 +449,7 @@ if __name__ == "__main__":
     # --------------- PART 2 BEGINS ---------------
 
     # Part 2.3
-    sgd_pickle_file = pickle_file_dir + "sgd"
+    sgd_pickle_file = pickle_file_dir + "sgd.pickle"
     alpha = 0.2
     B = 600
     num_epochs = 10
@@ -426,14 +470,14 @@ if __name__ == "__main__":
         sgd_args,
     )
 
-    momen_sgd_pickle_file = pickle_file_dir + "sgd_momentum"
+    momen_sgd_pickle_file = pickle_file_dir + "sgd_momentum.pickle"
     momentum_sgd_args = dict(sgd_args)
 
     momentum_sgd_args["beta"] = 0.9
     w_sgd_momen_09, time_sgd_momen = run_gd(
         Xs_tr,
         Ys_tr,
-        momen_sgd_pickle_file + "_beta_09",
+        momen_sgd_pickle_file + "_beta_09.pickle",
         "momen_sgd_beta_09",
         sgd_mss_with_momentum,
         momentum_sgd_args,
@@ -443,18 +487,18 @@ if __name__ == "__main__":
     w_sgd_momen_099, time_sgd_momen = run_gd(
         Xs_tr,
         Ys_tr,
-        momen_sgd_pickle_file + "_beta_099",
+        momen_sgd_pickle_file + "_beta_099.pickle",
         "momen_sgd_beta_099",
         sgd_mss_with_momentum,
         momentum_sgd_args,
     )
 
     # TODO: Part 2.4 (Athish)
-    sgd_tr_err, sgd_te_err = (get_error(X_tr, Y_tr, w_sgd), get_error(X_tr, Y_tr, w_sgd))
+    sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_tr, Ys_tr, w_sgd))
 
-    sgd_momen_09_tr_err, sgd_momen_09_te_err = (get_error(X_tr, Y_tr, w_sgd_momen_09), get_error(X_tr, Y_tr, w_sgd_momen_09))
+    sgd_momen_09_tr_err, sgd_momen_09_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_09), get_error(Xs_tr, Ys_tr, w_sgd_momen_09))
 
-    sgd_momen_99_tr_err, sgd_momen_99_te_err = (get_error(X_tr, Y_tr, w_sgd_momen_99), get_error(X_tr, Y_tr, w_sgd_momen_99))
+    sgd_momen_99_tr_err, sgd_momen_99_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_099), get_error(Xs_tr, Ys_tr, w_sgd_momen_099))
 
     # TODO: Part 2.5 (Athish)
     plt.plot(range(len(w_sgd)), sgd_tr_err)
@@ -471,14 +515,14 @@ if __name__ == "__main__":
     plt.savefig(figures_dir + "sgd_momen_09_te_err" + "_2.5_" + ".png")
     plt.close()
 
-    plt.plot(range(len(w_sgd_momen_99)), sgd_momen_99_tr_err)
+    plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_tr_err)
     plt.savefig(figures_dir + "sgd_momen_99_tr_err" + "_2.5_" + ".png")
     plt.close()
-    plt.plot(range(len(w_sgd_momen_99)), sgd_momen_99_te_err)
+    plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_te_err)
     plt.savefig(figures_dir + "sgd_momen_99_te_err" + "_2.5_" + ".png")
     plt.close()
 
-    # Part 2.6
+    Part 2.6
     sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
     for i in range(4):
         _, t_momen = run_gd(
@@ -513,7 +557,7 @@ if __name__ == "__main__":
 
     # Use SGD results from above
     # ADAM
-    adam_sgd_pickle_file = pickle_file_dir + "sgd_adam"
+    adam_sgd_pickle_file = pickle_file_dir + "sgd_adam.pickle"
     adam_sgd_args = dict(sgd_args)
     adam_sgd_args["eps"] = 10 ** -5
     adam_sgd_args["alpha"] = 0.01
@@ -524,9 +568,9 @@ if __name__ == "__main__":
     )
 
     # TODO: Part 3.3 (Athish)
-    sgd_tr_err, sgd_te_err = (get_error(X_tr, Y_tr, w_sgd), get_error(X_tr, Y_tr, w_sgd))
+    sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_tr, Ys_tr, w_sgd))
 
-    sgd_adam_tr_err, sgd_momen_09_te_err = (get_error(X_tr, Y_tr, w_sgd_adam), get_error(X_tr, Y_tr, w_sgd_adam))
+    sgd_adam_tr_err, sgd_adam_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_adam), get_error(Xs_tr, Ys_tr, w_sgd_adam))
 
     # TODO: Part 3.4 (Athish)
     plt.plot(range(len(w_sgd)), sgd_tr_err)
