@@ -438,6 +438,9 @@ if __name__ == "__main__":
     # print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
 
     # TODO Part 1.10 (Unassigned)
+    # call hyperpar here -- TODO Vedant
+    alphas = [0.25, 0.5, 0.75]
+    betas = [0.5, 0.8, 0.925, 0.95]
 
     # --------------- PART 2 BEGINS ---------------
 
@@ -543,6 +546,9 @@ if __name__ == "__main__":
     # print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
 
     # TODO: Part 2.7 (Unassigned)
+    # call hyperpar here -- TODO Vedant
+    alphas = [0.25, 0.5, 0.75]
+    betas = [[0.5, 0.8, 0.925, 0.95]
 
     # --------------- PART 3 BEGINS ---------------
 
@@ -592,3 +598,7 @@ if __name__ == "__main__":
     print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
 
     # TODO: Part 3.6 (Unassigned)
+    # call hyperpar here -- TODO Vedant
+    alphas = [0.25, 0.5, 0.75]
+    rho1 = [0.5, 0.8, 0.925, 0.95]
+    rho2 = [0.5, 0.8, 0.925, 0.95]
