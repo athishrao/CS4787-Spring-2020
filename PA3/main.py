@@ -10,13 +10,10 @@ import pickle
 
 matplotlib.use("agg")
 from matplotlib import pyplot as plt
-
 from scipy.special import softmax
-
 mnist_data_directory = os.path.join(os.path.dirname(__file__), "data")
 
 # TODO add any additional imports and global variables
-
 
 def load_MNIST_dataset():
     PICKLE_FILE = os.path.join(mnist_data_directory, "MNIST.pickle")
@@ -322,11 +319,26 @@ def run_gd(
             print(f"Dumping complete.")
     return W0, time_taken
 
+
 def get_error(Xs, Ys, params):
     errors = []
     for w in params:
         errors.append(multinomial_logreg_error(Xs, Ys, w))
     return errors
+
+
+def generatePlot(weight, lossOrError, name, questionNumber, color='green'):
+    figures_dir = "Figures/"
+    if not os.path.isdir(figures_dir):
+        print("Figures folder does not exist. Creating ...")
+        os.makedirs(figures_dir)
+        print(f"Created {figures_dir}.")
+    plt.plot(range(len(weight)), lossOrError)
+    plt.xlabel("Number of Observations")
+    plt.ylabel(name+"_error")
+    plt.savefig(figures_dir + name + "_"+questionNumber+"_" + ".png")
+    plt.close()
+
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
@@ -383,38 +395,22 @@ if __name__ == "__main__":
     )
 
     # # TODO: Part 1.7 (Athish)
-    # gd_tr_err, gd_te_err = (get_error(Xs_tr, Ys_tr, w_gd), get_error(Xs_te, Ys_te, w_gd))
-    #
-    # nesterov_gd_09_tr_err, nesterov_gd_09_te_err = (get_error(Xs_tr, Ys_tr, w_nest_09), get_error(Xs_te, Ys_te, w_nest_09))
-    #
-    # nesterov_gd_99_tr_err, nesterov_gd_99_te_err = (get_error(Xs_tr, Ys_tr, w_nest_099), get_error(Xs_te, Ys_te, w_nest_099))
-    #
-    # # # TODO: Part 1.8 (Athish)
-    figures_dir = "Figures/"
-    # if not os.path.isdir(figures_dir):
-    #     print("Figures folder does not exist. Creating ...")
-    #     os.makedirs(figures_dir)
-    #     print(f"Created {figures_dir}.")
-    # plt.plot(range(len(w_gd)), gd_tr_err)
-    # plt.savefig(figures_dir + "gd_tr" + "_1.8_" + ".png")
-    # plt.close()
-    # plt.plot(range(len(w_gd)), gd_te_err)
-    # plt.savefig(figures_dir + "gd_te" + "_1.8_" + ".png")
-    # plt.close()
-    #
-    # plt.plot(range(len(w_nest_09)), nesterov_gd_09_tr_err)
-    # plt.savefig(figures_dir + "nesterov_gd_09_tr_err" + "_1.8_" + ".png")
-    # plt.close()
-    # plt.plot(range(len(w_nest_09)), nesterov_gd_09_te_err)
-    # plt.savefig(figures_dir + "nesterov_gd_09_te_err" + "_1.8_" + ".png")
-    # plt.close()
-    #
-    # plt.plot(range(len(w_nest_099)), nesterov_gd_99_tr_err)
-    # plt.savefig(figures_dir + "nesterov_gd_99_tr_err" + "_1.8_" + ".png")
-    # plt.close()
-    # plt.plot(range(len(w_nest_099)), nesterov_gd_99_te_err)
-    # plt.savefig(figures_dir + "nesterov_gd_99_te_err" + "_1.8_" + ".png")
-    # plt.close()
+    gd_tr_err, gd_te_err = (get_error(Xs_tr, Ys_tr, w_gd), get_error(Xs_te, Ys_te, w_gd))
+
+    nesterov_gd_09_tr_err, nesterov_gd_09_te_err = (get_error(Xs_tr, Ys_tr, w_nest_09), get_error(Xs_te, Ys_te, w_nest_09))
+
+    nesterov_gd_99_tr_err, nesterov_gd_99_te_err = (get_error(Xs_tr, Ys_tr, w_nest_099), get_error(Xs_te, Ys_te, w_nest_099))
+
+    # TODO: Part 1.8 (Athish)
+    generatePlot(w_gd, gd_tr_err, "gd_tr_err", "1.8")
+    generatePlot(w_gd, gd_te_err, "gd_te_err", "1.8")
+
+    generatePlot(w_nest_09, nesterov_gd_09_tr_err, "nesterov_gd_09_tr_err", "1.8")
+    generatePlot(w_nest_09, nesterov_gd_09_te_err, "nesterov_gd_09_te_err", "1.8")
+
+    generatePlot(w_nest_099, nesterov_gd_99_tr_err, "nesterov_gd_99_tr_err", "1.8")
+    generatePlot(w_nest_099, nesterov_gd_99_te_err, "nesterov_gd_99_te_err", "1.8")
+
     #
     # # # Part 1.9
     # gd_time, nes_time = time_gd / 5, time_nest / 5
@@ -490,34 +486,22 @@ if __name__ == "__main__":
     )
 
     # # TODO: Part 2.4 (Athish)
-    # sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_te, Ys_te, w_sgd))
-    #
-    # sgd_momen_09_tr_err, sgd_momen_09_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_09), get_error(Xs_te, Ys_te, w_sgd_momen_09))
-    #
-    # sgd_momen_99_tr_err, sgd_momen_99_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_099), get_error(Xs_te, Ys_te, w_sgd_momen_099))
-    #
-    # # TODO: Part 2.5 (Athish)
-    # plt.plot(range(len(w_sgd)), sgd_tr_err)
-    # plt.savefig(figures_dir + "sgd_tr_err" + "_2.5_" + ".png")
-    # plt.close()
-    # plt.plot(range(len(w_sgd)), sgd_te_err)
-    # plt.savefig(figures_dir + "sgd_te_err" + "_2.5_" + ".png")
-    # plt.close()
-    #
-    # plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_tr_err)
-    # plt.savefig(figures_dir + "sgd_momen_09_tr_err" + "_2.5_" + ".png")
-    # plt.close()
-    # plt.plot(range(len(w_sgd_momen_09)), sgd_momen_09_te_err)
-    # plt.savefig(figures_dir + "sgd_momen_09_te_err" + "_2.5_" + ".png")
-    # plt.close()
-    #
-    # plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_tr_err)
-    # plt.savefig(figures_dir + "sgd_momen_99_tr_err" + "_2.5_" + ".png")
-    # plt.close()
-    # plt.plot(range(len(w_sgd_momen_099)), sgd_momen_99_te_err)
-    # plt.savefig(figures_dir + "sgd_momen_99_te_err" + "_2.5_" + ".png")
-    # plt.close()
-    #
+    sgd_tr_err, sgd_te_err = (get_error(Xs_tr, Ys_tr, w_sgd), get_error(Xs_te, Ys_te, w_sgd))
+
+    sgd_momen_09_tr_err, sgd_momen_09_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_09), get_error(Xs_te, Ys_te, w_sgd_momen_09))
+
+    sgd_momen_99_tr_err, sgd_momen_99_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_momen_099), get_error(Xs_te, Ys_te, w_sgd_momen_099))
+
+    # TODO: Part 2.5 (Athish)
+    generatePlot(w_sgd, sgd_tr_err, "sgd_tr_err", "2.5")
+    generatePlot(w_sgd, sgd_te_err, "sgd_te_err", "2.5")
+
+    generatePlot(w_sgd_momen_09, sgd_momen_09_tr_err, "sgd_momen_09_tr_err", "2.5")
+    generatePlot(w_sgd_momen_09, sgd_momen_09_te_err, "sgd_momen_09_te_err", "2.5")
+
+    generatePlot(w_sgd_momen_099, sgd_momen_99_tr_err, "sgd_momen_99_tr_err", "2.5")
+    generatePlot(w_sgd_momen_099, sgd_momen_99_te_err, "sgd_momen_99_te_err", "2.5")
+
     # Part 2.6
     # sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
     # for i in range(4):
@@ -548,13 +532,12 @@ if __name__ == "__main__":
     # TODO: Part 2.7 (Unassigned)
     # call hyperpar here -- TODO Vedant
     alphas = [0.25, 0.5, 0.75]
-    betas = [[0.5, 0.8, 0.925, 0.95]
+    betas = [0.5, 0.8, 0.925, 0.95]
 
     # --------------- PART 3 BEGINS ---------------
 
     # Part 3.2
 
-    # Use SGD results from above
     # ADAM
     adam_sgd_pickle_file = pickle_file_dir + "sgd_adam.pickle"
     adam_sgd_args = dict(sgd_args)
@@ -572,30 +555,22 @@ if __name__ == "__main__":
     sgd_adam_tr_err, sgd_adam_te_err = (get_error(Xs_tr, Ys_tr, w_sgd_adam), get_error(Xs_te, Ys_te, w_sgd_adam))
 
     # TODO: Part 3.4 (Athish)
-    plt.plot(range(len(w_sgd)), sgd_tr_err)
-    plt.savefig(figures_dir + "sgd_tr_err" + "_3.3_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_sgd)), sgd_te_err)
-    plt.savefig(figures_dir + "sgd_te_err" + "_3.3_" + ".png")
-    plt.close()
+    generatePlot(w_sgd, sgd_tr_err, "sgd_tr_err", "3.3")
+    generatePlot(w_sgd, sgd_te_err, "sgd_te_err", "3.3")
 
-    plt.plot(range(len(w_sgd_adam)), sgd_adam_tr_err)
-    plt.savefig(figures_dir + "sgd_adam_tr_err" + "_3.3_" + ".png")
-    plt.close()
-    plt.plot(range(len(w_sgd_adam)), sgd_adam_te_err)
-    plt.savefig(figures_dir + "sgd_adam_te_err" + "_3.3_" + ".png")
-    plt.close()
+    generatePlot(w_sgd_adam, sgd_adam_tr_err, "sgd_adam_tr_err", "3.3")
+    generatePlot(w_sgd_adam, sgd_adam_te_err, "sgd_adam_te_err", "3.3")
 
     # Part 3.5
-    sgd_adam_time = time_adam / 5
-    for i in range(4):
-        _, t_adam = run_gd(
-            Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
-        )
-        sgd_adam_time += t_adam / 5
-    print(DIVIDER)
-    print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
-    print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
+    # sgd_adam_time = time_adam / 5
+    # for i in range(4):
+    #     _, t_adam = run_gd(
+    #         Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
+    #     )
+    #     sgd_adam_time += t_adam / 5
+    # print(DIVIDER)
+    # print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
+    # print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
 
     # TODO: Part 3.6 (Unassigned)
     # call hyperpar here -- TODO Vedant
