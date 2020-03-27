@@ -381,13 +381,10 @@ def tune_hyperparams(
         config["tr_err"] = tr_err
         config["te_err"] = te_err
     print(f"Tuning for {algo_id} complete.")
-
-    if tuning_basis:
-        best_dict = choose_best(tuning_basis, configs)
-        return best_dict
-
     print(DIVIDER)
     print(DIVIDER)
+
+    return choose_best(tuning_basis, configs) if tuning_basis else None
 
 
 # Custom Argmax
