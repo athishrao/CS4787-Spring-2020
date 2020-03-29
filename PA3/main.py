@@ -98,10 +98,11 @@ def multinomial_logreg_error(Xs, Ys, W0):
 # returns   the model cross-entropy loss
 def multinomial_logreg_loss(Xs, Ys, gamma, W0):
     # TODO students should implement this
-    yHat = softmax(np.dot(W0, x))
+    yHat = softmax(np.dot(W0, Xs))
     yHat = np.log(yHat)
-    ans = -1 * np.dot(y.T, yHat)
+    ans = -1 * np.dot(Ys.T, yHat)
     ans += (gamma / 2) * (np.linalg.norm(W0, "fro")) ** 2
+    print(ans)
     ans = ans.item()
     return ans
 
@@ -172,10 +173,20 @@ def gd_nesterov(Xs, Ys, gamma, W0, alpha, beta, num_epochs, monitor_period):
     params = []
     loss = []
     error = []
+    v = W0
     for i in range(num_epochs):
-        if i % monitor_freq == 0:
+        if i % monitor_period == 0:
             params.append(W0)
-        W0 = W0 - alpha * multinomial_logreg_total_grad(Xs, Ys, gamma, W0)
+        vPrev = v
+        v = W0 - alpha * multinomial_logreg_total_grad(Xs, Ys, gamma, W0)
+        W0 = v + beta*(v - vPrev)
+        print("I", i)
+        print("V", v)
+        print("W0", W0)
+        print("VPrev", vPrev)
+        print("V diff", v - vPrev, beta)
+        print()
+
     params.append(W0)
     return params
 
@@ -229,11 +240,11 @@ def sgd_mss_with_momentum(
     v = 0
     d, n = Xs.shape
     for t in range(0, num_epochs):
-        for i in range(n // B - 1):
+        for i in range(n // B):
             if i % monitor_period == 0:
                 params.append(W0)
             ii = [(i * B + j) for j in range(B)]
-            g = (1 / B) * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
+            g = (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
             v = beta * v - alpha * g
             W0 = W0 + v
     params.append(W0)
@@ -263,12 +274,12 @@ def adam(Xs, Ys, gamma, W0, alpha, rho1, rho2, B, eps, num_epochs, monitor_perio
     s = [0 for i in range(d)]
     r = [0 for i in range(d)]
     for k in range(0, num_epochs):
-        for i in range(n // B - 1):
+        for i in range(n // B):
             if i % monitor_period == 0:
                 params.append(W0)
             t += 1
             ii = [(i * B + j) for j in range(B)]
-            g = (1 / B) * (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
+            g = (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
             g = g.T
             for j in range(d):
                 s[j] = rho1 * s[j] + (1 - rho1) * g[j]
@@ -453,16 +464,22 @@ if __name__ == "__main__":
         nesterov_gd_args,
     )
 
+    Xs = np.array([[.8, .3, .1, .8],[.5, .8, .5, .4]])
+    Ys = np.array([[1, 0, 0, 1],[0, 1, 1, 0]])
+    W = np.zeros((2, 2))
     nesterov_gd_args["beta"] = 0.99
+    nesterov_gd_args["W0"] = W
+    nesterov_gd_args["num_epochs"] = 6
     w_nest_099, time_nest = run_gd(
-        Xs_tr,
-        Ys_tr,
+        Xs,
+        Ys,
         nesterov_pickle_file + "_beta_099.pickle",
         "nesterov_beta_099",
         gd_nesterov,
         nesterov_gd_args,
     )
-
+    print(w_nest_099[5])
+    exit(0)
     # # TODO: Part 1.7 (Athish)
     gd_tr_err, gd_te_err = (
         get_error(Xs_tr, Ys_tr, w_gd),
