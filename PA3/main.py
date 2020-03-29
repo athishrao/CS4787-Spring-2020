@@ -361,7 +361,7 @@ def tune_hyperparams(
         for prod in it.product(*(hyper_params[k] for k in key_set))
     ]
 
-    print(DIVIDER)
+    print("\n" + DIVIDER)
     print(DIVIDER)
     print(f"Performing hyperparameter tuning for {algo_id} ...")
     for config in configs:
@@ -376,7 +376,7 @@ def tune_hyperparams(
         tr_loss = min(get_loss(train_x, train_y, params))
         print(f"Min. Training loss under current config is: {tr_loss}")
         print(f"Min. Training error under current config is: {tr_err}")
-        print(f"Min. Testing error under current config is: {te_err}")
+        print(f"Min. Testing error under current config is: {te_err}\n")
         config["tr_loss"] = tr_loss
         config["tr_err"] = tr_err
         config["te_err"] = te_err
