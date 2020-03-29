@@ -96,15 +96,16 @@ def multinomial_logreg_error(Xs, Ys, W0):
 # W0         parameters        (c * d)
 #
 # returns   the model cross-entropy loss
-def multinomial_logreg_loss(Xs, Ys, gamma, W0):
+def multinomial_logreg_loss(Xs, Ys, gamma, W):
     # TODO students should implement this
-    yHat = softmax(np.dot(W0, Xs))
-    yHat = np.log(yHat)
-    ans = -1 * np.dot(Ys.T, yHat)
-    ans += (gamma / 2) * (np.linalg.norm(W0, "fro")) ** 2
-    print(ans)
-    ans = ans.item()
-    return ans
+    (d,n) = Xs.shape
+    ret = 0
+    y_hat = softmax(np.dot(W,Xs), axis=0)
+    log_y_hat = -1 * np.log(y_hat)
+    y_dot_y_hat = np.multiply(log_y_hat, Ys)
+    L_y_y_hat = np.sum(y_dot_y_hat)
+    ret = L_y_y_hat + (gamma/2)*(np.linalg.norm(W, 'fro'))**2
+    return ret / n
 
 
 # gradient descent (SAME AS PROGRAMMING ASSIGNMENT 1)
@@ -180,12 +181,12 @@ def gd_nesterov(Xs, Ys, gamma, W0, alpha, beta, num_epochs, monitor_period):
         vPrev = v
         v = W0 - alpha * multinomial_logreg_total_grad(Xs, Ys, gamma, W0)
         W0 = v + beta*(v - vPrev)
-        print("I", i)
-        print("V", v)
-        print("W0", W0)
-        print("VPrev", vPrev)
-        print("V diff", v - vPrev, beta)
-        print()
+        # print("I", i)
+        # print("V", v)
+        # print("W0", W0)
+        # print("VPrev", vPrev)
+        # print("V diff", v - vPrev, beta)
+        # print()
 
     params.append(W0)
     return params
@@ -244,6 +245,7 @@ def sgd_mss_with_momentum(
             if i % monitor_period == 0:
                 params.append(W0)
             ii = [(i * B + j) for j in range(B)]
+            print(ii)
             g = (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
             v = beta * v - alpha * g
             W0 = W0 + v
@@ -478,9 +480,8 @@ if __name__ == "__main__":
         gd_nesterov,
         nesterov_gd_args,
     )
-    print(w_nest_099[5])
-    exit(0)
-    # # TODO: Part 1.7 (Athish)
+
+    # Part 1.7
     gd_tr_err, gd_te_err = (
         get_error(Xs_tr, Ys_tr, w_gd),
         get_error(Xs_te, Ys_te, w_gd),
@@ -496,7 +497,7 @@ if __name__ == "__main__":
         get_error(Xs_te, Ys_te, w_nest_099),
     )
 
-    # TODO: Part 1.8 (Athish)
+    # Part 1.8
     generatePlot(w_gd, gd_tr_err, "gd_tr_err", "1.8")
     generatePlot(w_gd, gd_te_err, "gd_te_err", "1.8")
 
@@ -506,29 +507,29 @@ if __name__ == "__main__":
     generatePlot(w_nest_099, nesterov_gd_99_tr_err, "nesterov_gd_99_tr_err", "1.8")
     generatePlot(w_nest_099, nesterov_gd_99_te_err, "nesterov_gd_99_te_err", "1.8")
 
-    #
-    # # # Part 1.9
-    # gd_time, nes_time = time_gd / 5, time_nest / 5
-    # for i in range(4):
-    #     _, t_nest = run_gd(
-    #         Xs_tr,
-    #         Ys_tr,
-    #         nesterov_pickle_file + "_beta_099",
-    #         "nesterov_beta_099",
-    #         gd_nesterov,
-    #         nesterov_gd_args,
-    #         True,
-    #     )
-    #     _, t_gd = run_gd(
-    #         Xs_tr, Ys_tr, gd_pickle_file, "basic_gd", gradient_descent, gd_args, True
-    #     )
-    #     gd_time += t_gd / 5
-    #     nes_time += t_nest / 5
-    # print(DIVIDER)
-    # print(f"Average time for Basic GD for 5 total runs is: {gd_time}")
-    # print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
 
-    # Part 1.10 (Unassigned)
+    # Part 1.9
+    gd_time, nes_time = time_gd / 5, time_nest / 5
+    for i in range(4):
+        _, t_nest = run_gd(
+            Xs_tr,
+            Ys_tr,
+            nesterov_pickle_file + "_beta_099",
+            "nesterov_beta_099",
+            gd_nesterov,
+            nesterov_gd_args,
+            True,
+        )
+        _, t_gd = run_gd(
+            Xs_tr, Ys_tr, gd_pickle_file, "basic_gd", gradient_descent, gd_args, True
+        )
+        gd_time += t_gd / 5
+        nes_time += t_nest / 5
+    print(DIVIDER)
+    print(f"Average time for Basic GD for 5 total runs is: {gd_time}")
+    print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
+
+    # Part 1.10
     hyperpar = {"alpha": [0.25, 0.5, 0.75]}
     # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
     tune_hyperparams(
@@ -619,31 +620,31 @@ if __name__ == "__main__":
     generatePlot(w_sgd_momen_099, sgd_momen_99_te_err, "sgd_momen_99_te_err", "2.5")
 
     # Part 2.6
-    # sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
-    # for i in range(4):
-    #     _, t_momen = run_gd(
-    #         Xs_tr,
-    #         Ys_tr,
-    #         momen_sgd_pickle_file + "_beta_099",
-    #         "momen_sgd_beta_099",
-    #         sgd_mss_with_momentum,
-    #         momentum_sgd_args,
-    #         True,
-    #     )
-    #     _, t_sgd = run_gd(
-    #         Xs_tr,
-    #         Ys_tr,
-    #         sgd_pickle_file,
-    #         "basic_sgd",
-    #         sgd_minibatch_sequential_scan,
-    #         sgd_args,
-    #         True,
-    #     )
-    #     sgd_time += t_sgd / 5
-    #     sgd_momen_time += t_momen / 5
-    # print(DIVIDER)
-    # print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
-    # print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
+    sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
+    for i in range(4):
+        _, t_momen = run_gd(
+            Xs_tr,
+            Ys_tr,
+            momen_sgd_pickle_file + "_beta_099",
+            "momen_sgd_beta_099",
+            sgd_mss_with_momentum,
+            momentum_sgd_args,
+            True,
+        )
+        _, t_sgd = run_gd(
+            Xs_tr,
+            Ys_tr,
+            sgd_pickle_file,
+            "basic_sgd",
+            sgd_minibatch_sequential_scan,
+            sgd_args,
+            True,
+        )
+        sgd_time += t_sgd / 5
+        sgd_momen_time += t_momen / 5
+    print(DIVIDER)
+    print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
+    print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
 
     # Part 2.7 (Unassigned)
     hyperpar = {"alpha": [0.25, 0.5, 0.75]}
@@ -682,7 +683,7 @@ if __name__ == "__main__":
         Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args
     )
 
-    # TODO: Part 3.3 (Athish)
+    # Part 3.3
     sgd_tr_err, sgd_te_err = (
         get_error(Xs_tr, Ys_tr, w_sgd),
         get_error(Xs_te, Ys_te, w_sgd),
@@ -693,7 +694,7 @@ if __name__ == "__main__":
         get_error(Xs_te, Ys_te, w_sgd_adam),
     )
 
-    # TODO: Part 3.4 (Athish)
+    # Part 3.4
     generatePlot(w_sgd, sgd_tr_err, "sgd_tr_err", "3.3")
     generatePlot(w_sgd, sgd_te_err, "sgd_te_err", "3.3")
 
@@ -701,17 +702,17 @@ if __name__ == "__main__":
     generatePlot(w_sgd_adam, sgd_adam_te_err, "sgd_adam_te_err", "3.3")
 
     # Part 3.5
-    # sgd_adam_time = time_adam / 5
-    # for i in range(4):
-    #     _, t_adam = run_gd(
-    #         Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
-    #     )
-    #     sgd_adam_time += t_adam / 5
-    # print(DIVIDER)
-    # print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
-    # print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
+    sgd_adam_time = time_adam / 5
+    for i in range(4):
+        _, t_adam = run_gd(
+            Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
+        )
+        sgd_adam_time += t_adam / 5
+    print(DIVIDER)
+    print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
+    print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
 
-    # TODO: Part 3.6 (Unassigned)
+    # Part 3.6
     hyperpar = {
         "alpha": [0.25, 0.5, 0.75],
         "rho1": [0.5, 0.8, 0.925, 0.95],
