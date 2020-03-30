@@ -251,6 +251,7 @@ def sgd_mss_with_momentum(
 def adam(Xs, Ys, gamma, W0, alpha, rho1, rho2, B, eps, num_epochs, monitor_period):
     # TODO students should implement this
     params = []
+    print(B, "batch")
     d, n = Xs.shape
     t = 0
     s = [0 for i in range(d)]
@@ -261,24 +262,15 @@ def adam(Xs, Ys, gamma, W0, alpha, rho1, rho2, B, eps, num_epochs, monitor_perio
                 params.append(W0)
             t += 1
             ii = [(i * B + j) for j in range(B)]
-            g = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0)
-            g = g.T
-            for j in range(d):
-                s[j] = rho1 * s[j] + (1 - rho1) * g[j]
-                r[j] = rho2 * r[j] + (1 - rho2) * g[j] ** 2
-            s_cap = np.matrix([i / (1 - (rho1 ** t)) for i in s])
-            r_cap = np.matrix([i / (1 - (rho2 ** t)) for i in r])
-            W0 = W0.T
-            W_temp = []
-            for j in range(d):
-                terms1 = W0[j].reshape(1, -1)
-                terms2 = ((alpha * s_cap[j]) / np.sqrt(r_cap[j] + eps)).reshape(1, -1)
-                W_temp.append(terms1 - terms2)
-            W_temp = np.array(W_temp)
-            W0 = W_temp.reshape(W0.shape[1], d)
+            g = (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
+            s = rho1 * np.asarray(s) + (1 - rho1) * np.asarray(g)
+            r = rho2 * np.asarray(r) + (1 - rho2) * np.asarray(g) ** 2
+            s_cap = np.array([i / (1 - (rho1 ** t)) for i in s])
+            r_cap = np.array([i / (1 - (rho2 ** t)) for i in r])
+            temp = alpha / np.sqrt(r_cap + eps)
+            W0 = W0 - temp * s_cap
     params.append(W0)
     return params
-
 
 def run_gd(
     Xs_inp,
