@@ -58,14 +58,13 @@ def load_MNIST_dataset():
 # returns   the average gradient of the regularized loss of the examples in vector ii with respect to the model parameters
 def multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0):
     # TODO students should use their implementation from programming assignment 2
-    Xs = Xs.T
-    Ys = Ys.T
+    d, n = Xs.shape
+    c, n = Ys.shape
     batchSize = len(ii)
-    totalLoss = 0
-    X_batch = Xs[ii]
-    Y_batch = Ys[ii]
-    yHat = softmax(np.matmul(W0, X_batch.T), axis=0) - Y_batch.T
-    ans = np.matmul(yHat, X_batch) + gamma * W0
+    X_batch = Xs[:, ii]
+    Y_batch = Ys[:, ii]
+    yHat = softmax(np.matmul(W0, X_batch), axis=0) - Y_batch
+    ans = np.matmul(yHat, X_batch.T) + batchSize * gamma * W0
     return ans / batchSize
 
 
@@ -96,15 +95,16 @@ def multinomial_logreg_error(Xs, Ys, W0):
 # W0         parameters        (c * d)
 #
 # returns   the model cross-entropy loss
-def multinomial_logreg_loss(Xs, Ys, gamma, W):
+def multinomial_logreg_loss(Xs, Ys, gamma, W0):
     # TODO students should implement this
-    (d,n) = Xs.shape
+    (d, n) = Xs.shape
     ret = 0
-    y_hat = softmax(np.dot(W,Xs), axis=0)
+    # Numpy Code
+    y_hat = softmax(np.dot(W0, Xs), axis=0)
     log_y_hat = -1 * np.log(y_hat)
     y_dot_y_hat = np.multiply(log_y_hat, Ys)
     L_y_y_hat = np.sum(y_dot_y_hat)
-    ret = L_y_y_hat + (gamma/2)*(np.linalg.norm(W, 'fro'))**2
+    ret = L_y_y_hat + (gamma / 2) * (np.linalg.norm(W0, "fro")) ** 2
     return ret / n
 
 
@@ -151,21 +151,7 @@ def multinomial_logreg_total_grad(Xs, Ys, gamma, W0):
     # ----- NUMPY CODE
     y_hat = softmax(np.dot(W0, Xs), axis=0)
     del_L = np.dot(y_hat - Ys, Xs.T)
-    ret = del_L + gamma * W0
-    return ret / n
-
-
-def multinomial_logreg_total_loss(Xs, Ys, gamma, W0):
-    # TODO students should implement this
-    # a starter solution using an average of the example gradients
-    (d, n) = Xs.shape
-    ret = 0
-    # Numpy Code
-    y_hat = softmax(np.dot(W0, Xs), axis=0)
-    log_y_hat = -1 * np.log(y_hat)
-    y_dot_y_hat = np.multiply(log_y_hat, Ys)
-    L_y_y_hat = np.sum(y_dot_y_hat)
-    ret = L_y_y_hat + (gamma / 2) * (np.linalg.norm(W0, "fro")) ** 2
+    ret = del_L + n * gamma * W0
     return ret / n
 
 
@@ -178,16 +164,11 @@ def gd_nesterov(Xs, Ys, gamma, W0, alpha, beta, num_epochs, monitor_period):
     for i in range(num_epochs):
         if i % monitor_period == 0:
             params.append(W0)
-        vPrev = v
-        v = W0 - alpha * multinomial_logreg_total_grad(Xs, Ys, gamma, W0)
-        W0 = v + beta*(v - vPrev)
-        # print("I", i)
-        # print("V", v)
-        # print("W0", W0)
-        # print("VPrev", vPrev)
-        # print("V diff", v - vPrev, beta)
-        # print()
-
+        vPrev = v[:]
+        v = W0 - alpha * multinomial_logreg_grad_i(
+            Xs, Ys, range(Xs.shape[1]), gamma, W0
+        )
+        W0 = v + beta * (v - vPrev)
     params.append(W0)
     return params
 
@@ -245,8 +226,7 @@ def sgd_mss_with_momentum(
             if i % monitor_period == 0:
                 params.append(W0)
             ii = [(i * B + j) for j in range(B)]
-            print(ii)
-            g = (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
+            g = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0)
             v = beta * v - alpha * g
             W0 = W0 + v
     params.append(W0)
@@ -281,7 +261,7 @@ def adam(Xs, Ys, gamma, W0, alpha, rho1, rho2, B, eps, num_epochs, monitor_perio
                 params.append(W0)
             t += 1
             ii = [(i * B + j) for j in range(B)]
-            g = (multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0))
+            g = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0)
             g = g.T
             for j in range(d):
                 s[j] = rho1 * s[j] + (1 - rho1) * g[j]
@@ -348,7 +328,7 @@ def get_error(Xs, Ys, params):
 def get_loss(Xs, Ys, params):
     losses = []
     for w in params:
-        losses.append(multinomial_logreg_total_loss(Xs, Ys, gamma, w))
+        losses.append(multinomial_logreg_loss(Xs, Ys, gamma, w))
     return losses
 
 
@@ -465,22 +445,15 @@ if __name__ == "__main__":
         gd_nesterov,
         nesterov_gd_args,
     )
-
-    Xs = np.array([[.8, .3, .1, .8],[.5, .8, .5, .4]])
-    Ys = np.array([[1, 0, 0, 1],[0, 1, 1, 0]])
-    W = np.zeros((2, 2))
     nesterov_gd_args["beta"] = 0.99
-    nesterov_gd_args["W0"] = W
-    nesterov_gd_args["num_epochs"] = 6
     w_nest_099, time_nest = run_gd(
-        Xs,
-        Ys,
+        Xs_tr,
+        Ys_tr,
         nesterov_pickle_file + "_beta_099.pickle",
         "nesterov_beta_099",
         gd_nesterov,
         nesterov_gd_args,
     )
-
     # Part 1.7
     gd_tr_err, gd_te_err = (
         get_error(Xs_tr, Ys_tr, w_gd),
@@ -506,7 +479,6 @@ if __name__ == "__main__":
 
     generatePlot(w_nest_099, nesterov_gd_99_tr_err, "nesterov_gd_99_tr_err", "1.8")
     generatePlot(w_nest_099, nesterov_gd_99_te_err, "nesterov_gd_99_te_err", "1.8")
-
 
     # Part 1.9
     gd_time, nes_time = time_gd / 5, time_nest / 5
