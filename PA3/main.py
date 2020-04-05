@@ -388,7 +388,7 @@ def generatePlot(weight, lossOrError, name, questionNumber, color="green"):
         print(f"Created {figures_dir}.")
     plt.plot(range(len(weight)), lossOrError)
     plt.xlabel("Number of Observations")
-    plt.ylabel(name + "_error")
+    plt.ylabel(name)
     plt.savefig(figures_dir + name + "_" + questionNumber + "_" + ".png")
     plt.close()
 
@@ -478,42 +478,42 @@ if __name__ == "__main__":
     generatePlot(w_nest_099, nesterov_gd_099_tr_loss, "nesterov_gd_099_tr_loss", "1.8")
 
     # Part 1.9
-    # gd_time, nes_time = time_gd / 5, time_nest / 5
-    # for i in range(4):
-    #     _, t_nest = run_gd(
-    #         Xs_tr,
-    #         Ys_tr,
-    #         nesterov_pickle_file + "_beta_099",
-    #         "nesterov_beta_099",
-    #         gd_nesterov,
-    #         nesterov_gd_args,
-    #         True,
-    #     )
-    #     _, t_gd = run_gd(
-    #         Xs_tr, Ys_tr, gd_pickle_file, "basic_gd", gradient_descent, gd_args, True
-    #     )
-    #     gd_time += t_gd / 5
-    #     nes_time += t_nest / 5
-    # print(DIVIDER)
-    # print(f"Average time for Basic GD for 5 total runs is: {gd_time}")
-    # print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
-    #
-    # # Part 1.10
-    # hyperpar = {"alpha": [0.25, 0.5, 0.75]}
-    # # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    # tune_hyperparams(
-    #     (Xs_tr, Ys_tr), (Xs_te, Ys_te), hyperpar, gd_args, gradient_descent, "basic_gd"
-    # )
-    # hyperpar["beta"] = [0.5, 0.8, 0.925, 0.95]
-    # # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    # tune_hyperparams(
-    #     (Xs_tr, Ys_tr),
-    #     (Xs_te, Ys_te),
-    #     hyperpar,
-    #     nesterov_gd_args,
-    #     gd_nesterov,
-    #     "nesterov_gd",
-    # )
+    gd_time, nes_time = time_gd / 5, time_nest / 5
+    for i in range(4):
+        _, t_nest = run_gd(
+            Xs_tr,
+            Ys_tr,
+            nesterov_pickle_file + "_beta_099",
+            "nesterov_beta_099",
+            gd_nesterov,
+            nesterov_gd_args,
+            True,
+        )
+        _, t_gd = run_gd(
+            Xs_tr, Ys_tr, gd_pickle_file, "basic_gd", gradient_descent, gd_args, True
+        )
+        gd_time += t_gd / 5
+        nes_time += t_nest / 5
+    print(DIVIDER)
+    print(f"Average time for Basic GD for 5 total runs is: {gd_time}")
+    print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
+
+    # Part 1.10
+    hyperpar = {"alpha": [0.25, 0.5, 0.75]}
+    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
+    tune_hyperparams(
+        (Xs_tr, Ys_tr), (Xs_te, Ys_te), hyperpar, gd_args, gradient_descent, "basic_gd"
+    )
+    hyperpar["beta"] = [0.5, 0.8, 0.925, 0.95]
+    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
+    tune_hyperparams(
+        (Xs_tr, Ys_tr),
+        (Xs_te, Ys_te),
+        hyperpar,
+        nesterov_gd_args,
+        gd_nesterov,
+        "nesterov_gd",
+    )
 
     # --------------- PART 2 BEGINS ---------------
 
@@ -594,53 +594,53 @@ if __name__ == "__main__":
     generatePlot(w_sgd_momen_099, sgd_momen_99_te_err, "sgd_momen_99_te_err", "2.5")
     generatePlot(w_sgd_momen_099, sgd_momen_99_tr_loss, "sgd_momen_99_tr_loss", "2.5")
     # Part 2.6
-    # sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
-    # for i in range(4):
-    #     _, t_momen = run_gd(
-    #         Xs_tr,
-    #         Ys_tr,
-    #         momen_sgd_pickle_file + "_beta_099",
-    #         "momen_sgd_beta_099",
-    #         sgd_mss_with_momentum,
-    #         momentum_sgd_args,
-    #         True,
-    #     )
-    #     _, t_sgd = run_gd(
-    #         Xs_tr,
-    #         Ys_tr,
-    #         sgd_pickle_file,
-    #         "basic_sgd",
-    #         sgd_minibatch_sequential_scan,
-    #         sgd_args,
-    #         True,
-    #     )
-    #     sgd_time += t_sgd / 5
-    #     sgd_momen_time += t_momen / 5
-    # print(DIVIDER)
-    # print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
-    # print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
-    #
-    # # Part 2.7 (Unassigned)
-    # hyperpar = {"alpha": [0.25, 0.5, 0.75]}
-    # # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    # tune_hyperparams(
-    #     (Xs_tr, Ys_tr),
-    #     (Xs_te, Ys_te),
-    #     hyperpar,
-    #     sgd_args,
-    #     sgd_minibatch_sequential_scan,
-    #     "basic_sgd",
-    # )
-    # hyperpar["beta"] = [0.5, 0.8, 0.925, 0.95]
-    # # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    # tune_hyperparams(
-    #     (Xs_tr, Ys_tr),
-    #     (Xs_te, Ys_te),
-    #     hyperpar,
-    #     momentum_sgd_args,
-    #     sgd_mss_with_momentum,
-    #     "momen_sgd",
-    # )
+    sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
+    for i in range(4):
+        _, t_momen = run_gd(
+            Xs_tr,
+            Ys_tr,
+            momen_sgd_pickle_file + "_beta_099",
+            "momen_sgd_beta_099",
+            sgd_mss_with_momentum,
+            momentum_sgd_args,
+            True,
+        )
+        _, t_sgd = run_gd(
+            Xs_tr,
+            Ys_tr,
+            sgd_pickle_file,
+            "basic_sgd",
+            sgd_minibatch_sequential_scan,
+            sgd_args,
+            True,
+        )
+        sgd_time += t_sgd / 5
+        sgd_momen_time += t_momen / 5
+    print(DIVIDER)
+    print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
+    print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
+
+    # Part 2.7 (Unassigned)
+    hyperpar = {"alpha": [0.25, 0.5, 0.75]}
+    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
+    tune_hyperparams(
+        (Xs_tr, Ys_tr),
+        (Xs_te, Ys_te),
+        hyperpar,
+        sgd_args,
+        sgd_minibatch_sequential_scan,
+        "basic_sgd",
+    )
+    hyperpar["beta"] = [0.5, 0.8, 0.925, 0.95]
+    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
+    tune_hyperparams(
+        (Xs_tr, Ys_tr),
+        (Xs_te, Ys_te),
+        hyperpar,
+        momentum_sgd_args,
+        sgd_mss_with_momentum,
+        "momen_sgd",
+    )
 
     # --------------- PART 3 BEGINS ---------------
 
@@ -680,23 +680,23 @@ if __name__ == "__main__":
     generatePlot(w_sgd_adam, sgd_adam_tr_loss, "sgd_adam_tr_loss", "3.3")
 
     # Part 3.5
-    # sgd_adam_time = time_adam / 5
-    # for i in range(4):
-    #     _, t_adam = run_gd(
-    #         Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
-    #     )
-    #     sgd_adam_time += t_adam / 5
-    # print(DIVIDER)
-    # print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
-    # print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
-    #
-    # # Part 3.6
-    # hyperpar = {
-    #     "alpha": [0.25, 0.5, 0.75],
-    #     "rho1": [0.5, 0.8, 0.925, 0.95],
-    #     "rho2": [0.5, 0.8, 0.925, 0.95],
-    # }
-    # # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    # tune_hyperparams(
-    #     (Xs_tr, Ys_tr), (Xs_te, Ys_te), hyperpar, adam_sgd_args, adam, "adam_sgd"
-    # )
+    sgd_adam_time = time_adam / 5
+    for i in range(4):
+        _, t_adam = run_gd(
+            Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
+        )
+        sgd_adam_time += t_adam / 5
+    print(DIVIDER)
+    print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
+    print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
+
+    # Part 3.6
+    hyperpar = {
+        "alpha": [0.25, 0.5, 0.75],
+        "rho1": [0.5, 0.8, 0.925, 0.95],
+        "rho2": [0.5, 0.8, 0.925, 0.95],
+    }
+    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
+    tune_hyperparams(
+        (Xs_tr, Ys_tr), (Xs_te, Ys_te), hyperpar, adam_sgd_args, adam, "adam_sgd"
+    )
