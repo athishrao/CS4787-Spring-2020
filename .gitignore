@@ -104,9 +104,8 @@ dmypy.json
 #Data
 data/
 
-#Pickle
+# Dumps
 *.pickle
 pickle_files/
-Figures/
 *.txt
 *.zip
