@@ -388,7 +388,7 @@ def generatePlot(weight, lossOrError, name, questionNumber, color="green"):
         print(f"Created {figures_dir}.")
     plt.plot(range(len(weight)), lossOrError)
     plt.xlabel("Number of Observations")
-    plt.ylabel(name + "_error")
+    plt.ylabel(name)
     plt.savefig(figures_dir + name + "_" + questionNumber + "_" + ".png")
     plt.close()
 
@@ -620,7 +620,7 @@ if __name__ == "__main__":
     print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
     print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
 
-    # # Part 2.7 (Unassigned)
+    # Part 2.7 (Unassigned)
     hyperpar = {"alpha": [0.25, 0.5, 0.75]}
     # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
     tune_hyperparams(
@@ -690,7 +690,7 @@ if __name__ == "__main__":
     print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
     print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
 
-    # # Part 3.6
+    # Part 3.6
     hyperpar = {
         "alpha": [0.25, 0.5, 0.75],
         "rho1": [0.5, 0.8, 0.925, 0.95],
