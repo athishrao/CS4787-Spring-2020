@@ -368,16 +368,18 @@ def tune_hyperparams(
     print(DIVIDER)
     print(DIVIDER)
 
-    return choose_best(tuning_basis, configs) if tuning_basis else None
+    return choose_best(configs, metric=tuning_basis)
 
 
 # Custom Argmax
 # Choose best dict based on a certain key (metric)
 # Find either max or min
-def choose_best(metric, dict_list, find_max=False):
-    if not find_max:
-        return min(dict_list, key=lambda x: x[metric])
-    return max(dict_list, key=lambda x: x[metric])
+def choose_best(dict_list, metric="", find_max=False):
+    fn = min if not find_max else max
+    if not metric:
+            return fn(dict_list, key=lambda x: sum(x.values()))
+    return fn(dict_list, key=lambda x: x[metric])
+
 
 
 def generatePlot(weight, lossOrError, name, questionNumber, color="green"):
@@ -492,21 +494,21 @@ if __name__ == "__main__":
         _, t_gd = run_gd(
             Xs_tr, Ys_tr, gd_pickle_file, "basic_gd", gradient_descent, gd_args, True
         )
-        gd_time += t_gd / 5
-        nes_time += t_nest / 5
+        gd_time += (t_gd / 5)
+        nes_time += (t_nest / 5)
     print(DIVIDER)
     print(f"Average time for Basic GD for 5 total runs is: {gd_time}")
     print(f"Average time for Nesterov GD for 5 total runs is: {nes_time}")
 
     # Part 1.10
     hyperpar = {"alpha": [0.25, 0.5, 0.75]}
-    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    tune_hyperparams(
+    gd_tune = tune_hyperparams(
         (Xs_tr, Ys_tr), (Xs_te, Ys_te), hyperpar, gd_args, gradient_descent, "basic_gd"
     )
+    print("Best hyperparam combo for basic GD is:")
+    print(gd_tune)
     hyperpar["beta"] = [0.5, 0.8, 0.925, 0.95]
-    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    tune_hyperparams(
+    nes_tune = tune_hyperparams(
         (Xs_tr, Ys_tr),
         (Xs_te, Ys_te),
         hyperpar,
@@ -514,6 +516,8 @@ if __name__ == "__main__":
         gd_nesterov,
         "nesterov_gd",
     )
+    print("Best hyperparam combo for Nesterov GD is:")
+    print(nes_tune)
 
     # --------------- PART 2 BEGINS ---------------
 
@@ -614,16 +618,15 @@ if __name__ == "__main__":
             sgd_args,
             True,
         )
-        sgd_time += t_sgd / 5
-        sgd_momen_time += t_momen / 5
+        sgd_time += (t_sgd / 5)
+        sgd_momen_time += (t_momen / 5)
     print(DIVIDER)
     print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
     print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
 
     # Part 2.7 (Unassigned)
     hyperpar = {"alpha": [0.25, 0.5, 0.75]}
-    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    tune_hyperparams(
+    sgd_tune = tune_hyperparams(
         (Xs_tr, Ys_tr),
         (Xs_te, Ys_te),
         hyperpar,
@@ -631,9 +634,11 @@ if __name__ == "__main__":
         sgd_minibatch_sequential_scan,
         "basic_sgd",
     )
+    print("Best hyperparam combo for  SGD is:")
+    print(sgd_tune)
+
     hyperpar["beta"] = [0.5, 0.8, 0.925, 0.95]
-    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    tune_hyperparams(
+    momen_tune = tune_hyperparams(
         (Xs_tr, Ys_tr),
         (Xs_te, Ys_te),
         hyperpar,
@@ -641,6 +646,8 @@ if __name__ == "__main__":
         sgd_mss_with_momentum,
         "momen_sgd",
     )
+    print("Best hyperparam combo for  Momentum-SGD is:")
+    print(momen_tune)
 
     # --------------- PART 3 BEGINS ---------------
 
@@ -685,7 +692,7 @@ if __name__ == "__main__":
         _, t_adam = run_gd(
             Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
         )
-        sgd_adam_time += t_adam / 5
+        sgd_adam_time += (t_adam / 5)
     print(DIVIDER)
     print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
     print(f"Average time for Adam SGD for 5 total runs is: {sgd_adam_time}")
@@ -696,7 +703,8 @@ if __name__ == "__main__":
         "rho1": [0.5, 0.8, 0.925, 0.95],
         "rho2": [0.5, 0.8, 0.925, 0.95],
     }
-    # ONLY PRINTS FOR NOW, RETURNS NOTHING BEC NO TUNING BASIS PASSED AS PARAM
-    tune_hyperparams(
+    ada_tune = tune_hyperparams(
         (Xs_tr, Ys_tr), (Xs_te, Ys_te), hyperpar, adam_sgd_args, adam, "adam_sgd"
     )
+    print("Best hyperparam combo for  Adam-SGD is:")
+    print(ada_tune)
