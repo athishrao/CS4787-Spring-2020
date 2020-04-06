@@ -214,11 +214,11 @@ def sgd_minibatch_sequential_scan(
 #
 # returns         a list of model parameters, one every "monitor_period" batches
 def sgd_mss_with_momentum(
-    Xs, Ys, gamma, W, alpha, beta, B, num_epochs, monitor_period
+    Xs, Ys, gamma, W0, alpha, beta, B, num_epochs, monitor_period
 ):
     # TODO students should implement this
     params = []
-    W0 = W
+    W0 = W0
     v = 0
     d, n = Xs.shape
     for t in range(0, num_epochs):
@@ -478,8 +478,8 @@ if __name__ == "__main__":
     generatePlot(w_nest_099, nesterov_gd_099_tr_loss, "nesterov_gd_099_tr_loss", "1.8")
 
     # Part 1.9
-    gd_time, nes_time = time_gd / 5, time_nest / 5
-    for i in range(4):
+    gd_time, nes_time = 0, 0
+    for i in range(5):
         _, t_nest = run_gd(
             Xs_tr,
             Ys_tr,
@@ -594,8 +594,8 @@ if __name__ == "__main__":
     generatePlot(w_sgd_momen_099, sgd_momen_99_te_err, "sgd_momen_99_te_err", "2.5")
     generatePlot(w_sgd_momen_099, sgd_momen_99_tr_loss, "sgd_momen_99_tr_loss", "2.5")
     # Part 2.6
-    sgd_time, sgd_momen_time = time_sgd / 5, time_sgd_momen / 5
-    for i in range(4):
+    sgd_time, sgd_momen_time = 0, 0
+    for i in range(5):
         _, t_momen = run_gd(
             Xs_tr,
             Ys_tr,
@@ -680,8 +680,8 @@ if __name__ == "__main__":
     generatePlot(w_sgd_adam, sgd_adam_tr_loss, "sgd_adam_tr_loss", "3.3")
 
     # Part 3.5
-    sgd_adam_time = time_adam / 5
-    for i in range(4):
+    sgd_adam_time = 0
+    for i in range(5):
         _, t_adam = run_gd(
             Xs_tr, Ys_tr, adam_sgd_pickle_file, "adam_sgd", adam, adam_sgd_args, True
         )
