@@ -377,21 +377,23 @@ def tune_hyperparams(
 def choose_best(dict_list, metric="", find_max=False):
     fn = min if not find_max else max
     if not metric:
-            return fn(dict_list, key=lambda x: sum(x.values()))
+            return fn(dict_list, key=lambda x: (x["tr_loss"] + x["tr_err"]))
     return fn(dict_list, key=lambda x: x[metric])
 
 
 
-def generatePlot(weight, lossOrError, name, questionNumber, color="green"):
+def generatePlot(weight, names, figureName, array, color="green"):
     figures_dir = "Figures/"
     if not os.path.isdir(figures_dir):
         print("Figures folder does not exist. Creating ...")
         os.makedirs(figures_dir)
         print(f"Created {figures_dir}.")
-    plt.plot(range(len(weight)), lossOrError)
-    plt.xlabel("Number of Observations")
-    plt.ylabel(name)
-    plt.savefig(figures_dir + name + "_" + questionNumber + "_" + ".png")
+    for i in range(len(array)):
+        plt.plot(range(len(weight[i])), array[i], label=names[i])
+        plt.xlabel("Number of Observations")
+        plt.ylabel(figureName)
+        plt.legend(loc="upper right")
+    plt.savefig(figures_dir + figureName + "_" + ".png")
     plt.close()
 
 
@@ -467,18 +469,9 @@ if __name__ == "__main__":
     nesterov_gd_099_tr_loss = get_loss(Xs_tr, Ys_tr, w_nest_099)
 
     # Part 1.8
-    generatePlot(w_gd, gd_tr_err, "gd_tr_err", "1.8")
-    generatePlot(w_gd, gd_te_err, "gd_te_err", "1.8")
-    generatePlot(w_gd, gd_tr_loss, "gd_tr_loss", "1.8")
-
-    generatePlot(w_nest_09, nesterov_gd_09_tr_err, "nesterov_gd_09_tr_err", "1.8")
-    generatePlot(w_nest_09, nesterov_gd_09_te_err, "nesterov_gd_09_te_err", "1.8")
-    generatePlot(w_nest_09, nesterov_gd_09_tr_loss, "nesterov_gd_09_tr_loss", "1.8")
-
-    generatePlot(w_nest_099, nesterov_gd_99_tr_err, "nesterov_gd_99_tr_err", "1.8")
-    generatePlot(w_nest_099, nesterov_gd_99_te_err, "nesterov_gd_99_te_err", "1.8")
-    generatePlot(w_nest_099, nesterov_gd_099_tr_loss, "nesterov_gd_099_tr_loss", "1.8")
-
+    generatePlot([w_gd, w_nest_09, w_nest_099], ["gd_tr_err", "nesterov_gd_09_tr_err", "nesterov_gd_99_tr_err"], "TrainError-1", [gd_tr_err, nesterov_gd_09_tr_err, nesterov_gd_99_tr_err])
+    generatePlot([w_gd, w_nest_09, w_nest_099], ["gd_te_err", "nesterov_gd_09_te_err", "nesterov_gd_99_te_err"], "TestError-1", [gd_te_err, nesterov_gd_09_te_err, nesterov_gd_99_te_err])
+    generatePlot([w_gd, w_nest_09, w_nest_099], ["gd_te_err", "nesterov_gd_09_te_err", "nesterov_gd_99_te_err"], "TrainError-1", [gd_tr_loss, nesterov_gd_09_tr_loss, nesterov_gd_099_tr_loss])
     # Part 1.9
     gd_time, nes_time = 0, 0
     for i in range(5):
@@ -586,17 +579,9 @@ if __name__ == "__main__":
     sgd_momen_99_tr_loss = get_loss(Xs_tr, Ys_tr, w_sgd_momen_099)
 
     # Part 2.5 (Athish)
-    generatePlot(w_sgd, sgd_tr_err, "sgd_tr_err", "2.5")
-    generatePlot(w_sgd, sgd_te_err, "sgd_te_err", "2.5")
-    generatePlot(w_sgd, sgd_tr_loss, "sgd_tr_loss", "2.5")
-
-    generatePlot(w_sgd_momen_09, sgd_momen_09_tr_err, "sgd_momen_09_tr_err", "2.5")
-    generatePlot(w_sgd_momen_09, sgd_momen_09_te_err, "sgd_momen_09_te_err", "2.5")
-    generatePlot(w_sgd_momen_09, sgd_momen_09_tr_loss, "sgd_momen_09_tr_loss", "2.5")
-
-    generatePlot(w_sgd_momen_099, sgd_momen_99_tr_err, "sgd_momen_99_tr_err", "2.5")
-    generatePlot(w_sgd_momen_099, sgd_momen_99_te_err, "sgd_momen_99_te_err", "2.5")
-    generatePlot(w_sgd_momen_099, sgd_momen_99_tr_loss, "sgd_momen_99_tr_loss", "2.5")
+    generatePlot([w_sgd, w_sgd_momen_09, w_sgd_momen_099], ["sgd_tr_err", "sgd_momen_09_tr_err", "sgd_momen_99_tr_err"], "TrainError-2", [sgd_tr_err, sgd_momen_09_tr_err, sgd_momen_99_tr_err])
+    generatePlot([w_sgd, w_sgd_momen_09, w_sgd_momen_099], ["sgd_te_err", "sgd_momen_09_te_err", "sgd_momen_99_te_err"], "TestError-2", [sgd_te_err, sgd_momen_09_te_err, sgd_momen_99_te_err])
+    generatePlot([w_sgd, w_sgd_momen_09, w_sgd_momen_099], ["sgd_tr_loss", "sgd_momen_09_tr_loss", "sgd_momen_99_tr_loss"], "TrainLoss-2", [sgd_tr_loss, sgd_momen_09_tr_loss, sgd_momen_99_tr_loss])
     # Part 2.6
     sgd_time, sgd_momen_time = 0, 0
     for i in range(5):
@@ -623,8 +608,8 @@ if __name__ == "__main__":
     print(DIVIDER)
     print(f"Average time for Basic SGD for 5 total runs is: {sgd_time}")
     print(f"Average time for Momentum SGD for 5 total runs is: {sgd_momen_time}")
-
-    # Part 2.7 (Unassigned)
+    #
+    # # Part 2.7 (Unassigned)
     hyperpar = {"alpha": [0.25, 0.5, 0.75]}
     sgd_tune = tune_hyperparams(
         (Xs_tr, Ys_tr),
@@ -678,14 +663,9 @@ if __name__ == "__main__":
     sgd_adam_tr_loss = get_loss(Xs_tr, Ys_tr, w_sgd_adam)
 
     # Part 3.4
-    generatePlot(w_sgd, sgd_tr_err, "sgd_tr_err", "3.3")
-    generatePlot(w_sgd, sgd_te_err, "sgd_te_err", "3.3")
-    generatePlot(w_sgd, sgd_tr_loss, "sgd_tr_loss", "3.3")
-
-    generatePlot(w_sgd_adam, sgd_adam_tr_err, "sgd_adam_tr_err", "3.3")
-    generatePlot(w_sgd_adam, sgd_adam_te_err, "sgd_adam_te_err", "3.3")
-    generatePlot(w_sgd_adam, sgd_adam_tr_loss, "sgd_adam_tr_loss", "3.3")
-
+    generatePlot([w_sgd, w_sgd_adam], ["sgd_tr_err", "sgd_adam_tr_err"], "TrainError-3", [sgd_tr_err, sgd_adam_tr_err])
+    generatePlot([w_sgd, w_sgd_adam], ["sgd_te_err", "sgd_adam_te_err"], "TestError-3", [sgd_te_err, sgd_adam_te_err])
+    generatePlot([w_sgd, w_sgd_adam], ["sgd_tr_loss", "sgd_adam_tr_loss"], "TrainLoss-3", [sgd_tr_loss, sgd_adam_tr_loss])
     # Part 3.5
     sgd_adam_time = 0
     for i in range(5):
