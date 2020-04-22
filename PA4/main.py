@@ -6,10 +6,14 @@ import scipy
 import matplotlib
 import mnist
 import pickle
-matplotlib.use('agg')
-from matplotlib import pyplot
+from tensorflow import keras
+from tensorflow.keras import datasets, layers, models
+# matplotlib.use('agg')
+from matplotlib import pyplot as plt
+
 
 import tensorflow as tf
+from tensorflow.keras.layers import Dense
 mnist = tf.keras.datasets.mnist
 
 if tf.__version__ != "2.1.0":
@@ -37,6 +41,9 @@ rho2 = 0.999
 def load_MNIST_dataset():
     mnist = tf.keras.datasets.mnist
     (Xs_tr, Ys_tr), (Xs_te, Ys_te) = mnist.load_data()
+    # plt.gray()
+    # plt.imshow(Xs_tr[0])
+    # plt.show()
     Xs_tr = Xs_tr / 255.0
     Xs_te = Xs_te / 255.0
     Xs_tr = Xs_tr.reshape(Xs_tr.shape[0], 28, 28, 1) # 28 rows, 28 columns, 1 channel
@@ -70,9 +77,24 @@ def evaluate_model(Xs, Ys, model):
 # returns   a tuple of
 #   model       the trained model (should be of type tensorflow.python.keras.engine.sequential.Sequential)
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
-def train_fully_connected_sgd(Xs, Ys, d1, d2, alpha, beta, B, epochs):
+def train_fully_connected_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
     # TODO students should implement this
 
+    Xs = Xs.reshape(60000, 784).astype('float64')
+    Ys = Ys.astype('float64')
+
+    model = models.Sequential()
+    model.add(layers.Dense(d1, activation='relu', name='dense_1'))
+    model.add(layers.Dense(d2, activation='relu', name='dense_2'))
+    model.add(layers.Dense(10, activation='softmax', name='predictions'))
+
+    opt = tf.keras.optimizers.SGD(learning_rate=alpha, momentum=beta, nesterov=False, name='SGD')
+    lossFunc = keras.losses.SparseCategoricalCrossentropy()
+
+    model.compile(optimizer=opt,loss=lossFunc,metrics=['acc'])
+    history = model.fit(Xs, Ys,batch_size=B,epochs=Epochs)
+    
+    return model, history
 # train a fully connected two-hidden-layer neural network on MNIST data using Adam, and print the usual output from TF
 #
 # Xs        training examples
@@ -88,9 +110,24 @@ def train_fully_connected_sgd(Xs, Ys, d1, d2, alpha, beta, B, epochs):
 # returns   a tuple of
 #   model       the trained model (should be of type tensorflow.python.keras.engine.sequential.Sequential)
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
-def train_fully_connected_adam(Xs, Ys, d1, d2, alpha, rho1, rho2, B, epochs):
+def train_fully_connected_adam(Xs, Ys, d1, d2, alpha, rho1, rho2, B, Epochs):
     # TODO students should implement this
+    
+    Xs = Xs.reshape(60000, 784).astype('float64')
+    Ys = Ys.astype('float64')
 
+    model = models.Sequential()
+    model.add(layers.Dense(d1, activation='relu', name='dense_1'))
+    model.add(layers.Dense(d2, activation='relu', name='dense_2'))
+    model.add(layers.Dense(10, activation='softmax', name='predictions'))
+
+    opt = tf.keras.optimizers.Adam(learning_rate=alpha, beta_1=rho1, beta_2=rho2, epsilon=1e-07, amsgrad=False, name='Adam')
+    lossFunc = keras.losses.SparseCategoricalCrossentropy()
+
+    model.compile(optimizer=opt,loss=lossFunc,metrics=['acc'])
+    history = model.fit(Xs, Ys,batch_size=B,epochs=Epochs)
+    
+    return model, history
 # train a fully connected two-hidden-layer neural network with Batch Normalization on MNIST data using SGD, and print the usual output from TF
 #
 # Xs        training examples
@@ -105,10 +142,26 @@ def train_fully_connected_adam(Xs, Ys, d1, d2, alpha, rho1, rho2, B, epochs):
 # returns   a tuple of
 #   model       the trained model (should be of type tensorflow.python.keras.engine.sequential.Sequential)
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
-def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, epochs):
+def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
     # TODO students should implement this
 
+    Xs = Xs.reshape(60000, 784).astype('float64')
+    Ys = Ys.astype('float64')
 
+    model = models.Sequential()
+    model.add(layers.Dense(d1, activation='relu', name='dense_1'))
+    model.add(layers.BatchNormalization(axis=-1, momentum=beta))
+    model.add(layers.Dense(d2, activation='relu', name='dense_2'))
+    model.add(layers.BatchNormalization(axis=-1, momentum=beta))
+    model.add(layers.Dense(10, activation='softmax', name='predictions'))
+
+    opt = tf.keras.optimizers.SGD(learning_rate=alpha, momentum=beta, nesterov=False, name='SGD')
+    lossFunc = keras.losses.SparseCategoricalCrossentropy()
+    
+    model.compile(optimizer=opt,loss=lossFunc,metrics=['acc'])
+    history = model.fit(Xs, Ys,batch_size=B,epochs=Epochs)
+
+    return model, history
 # train a convolutional neural network on MNIST data using SGD, and print the usual output from TF
 #
 # Xs        training examples
@@ -122,11 +175,29 @@ def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, epochs):
 # returns   a tuple of
 #   model       the trained model (should be of type tensorflow.python.keras.engine.sequential.Sequential)
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
-def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, epochs):
+def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs):
     # TODO students should implement this
+    model = models.Sequential()
+    model.add(layers.Conv2D(32, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(64, kernel_size=(5, 5), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Dense(512, activation='relu'))
+    model.add(layers.Dense(10, activation='softmax'))
 
+    opt = tf.keras.optimizers.SGD(learning_rate=alpha, momentum=beta, nesterov=False, name='SGD')
+    lossFunc = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    
+    model.compile(optimizer=opt,loss=lossFunc,metrics=['acc'])
+    history = model.fit(Xs, Ys,batch_size=B,epochs=Epochs)
+
+    return model, history
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
     # TODO students should add code to generate plots here
 
+    # train_fully_connected_sgd(Xs_tr, Ys_tr, d1, d2, alpha, beta, batch_size, epochs)
+    # train_fully_connected_adam(Xs_tr, Ys_tr, d1, d2, alpha_adam, rho1, rho2, batch_size, epochs)
+    # train_fully_connected_bn_sgd(Xs_tr, Ys_tr, d1, d2, alpha, beta, batch_size, epochs)
+    train_CNN_sgd(Xs_tr, Ys_tr, alpha, rho1, rho2, batch_size, epochs)
