@@ -235,11 +235,16 @@ def run_algo(algorithm_identifier, algo_fn, algo_args, X_te, Y_te, names):
     print(f"Algorithm {algorithm_identifier} complete. Time taken: {time_taken}")
 
     print(f"Testing Algorithm {algorithm_identifier} ...")
-    X_te = X_te.reshape(10000,784).astype("float64") if not (algorithm_identifier == "cnn") else X_te
+    X_te = (
+        X_te.reshape(10000, 784).astype("float64")
+        if not (algorithm_identifier == "cnn")
+        else X_te
+    )
     te_l, te_acc = evaluate_model(X_te, Y_te, model)
     print(f"Testing {algorithm_identifier} complete.")
     generatePlot(algorithm_identifier, history.history, te_l, te_acc, names)
     return model, history, te_l, te_acc, time_taken
+
 
 def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
     figures_dir = "Figures/"
@@ -250,7 +255,9 @@ def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
     print(history, history["loss"], len(history["loss"]))
     test_err = [test_err for _ in range(len(history["loss"]))]
     plt.plot(range(len(history["loss"])), history["loss"], label="Training loss")
-    plt.plot(range(len(history["val_loss"])), history["val_loss"], label="Training loss")
+    plt.plot(
+        range(len(history["val_loss"])), history["val_loss"], label="Training loss"
+    )
     plt.plot(range(len(history["loss"])), test_err, label="Training loss")
     plt.title(names[algorithm_identifier])
     plt.xlabel("Number of Epoch")
@@ -261,7 +268,9 @@ def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
 
     test_acc = [test_acc for _ in range(len(history["loss"]))]
     plt.plot(range(len(history["acc"])), history["acc"], label="Training accuracy")
-    plt.plot(range(len(history["val_acc"])), history["val_acc"], label="Validation accuracy")
+    plt.plot(
+        range(len(history["val_acc"])), history["val_acc"], label="Validation accuracy"
+    )
     plt.plot(range(len(history["val_acc"])), test_acc, label="Validation accuracy")
     plt.title(names[algorithm_identifier])
     plt.xlabel("Number of Epoch")
@@ -271,6 +280,45 @@ def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
     plt.close()
 
 
+def grid_search(
+    tr_data, te_data, hyper_params, algo_args, algo_fn, algo_id, tuning_basis=""
+):
+    train_x, train_y = tr_data
+    test_x, test_y = te_data
+    key_set = sorted(hyper_params)
+    configs = [
+        dict(zip(key_set, prod))
+        for prod in it.product(*(hyper_params[k] for k in key_set))
+    ]
+
+    print("\n" + DIVIDER)
+    print(DIVIDER)
+    print(f"Performing hyperparameter tuning for {algo_id} ...")
+    for config in configs:
+        print_config(config)
+        for k in config:
+            algo_args[k] = config[k]
+        model, history, te_l, te_acc, _ = run_algo(
+            algo_id, algo_fn, algo_args, test_x, test_y
+        )
+        config["te_l"] = te_l
+        config["te_acc"] = te_acc
+
+    print(f"Tuning for {algo_id} complete.")
+    print(DIVIDER)
+    print(DIVIDER)
+
+    return choose_best(configs, metric=tuning_basis)
+
+
+# Custom Argmax
+# Choose best dict based on a certain key (metric)
+# Find either max or min
+def choose_best(dict_list, metric="", find_max=False):
+    fn = min if not find_max else max
+    if not metric:
+        return fn(dict_list, key=lambda x: (x["tr_loss"] + x["tr_err"]))
+    return fn(dict_list, key=lambda x: x[metric])
 
 
 if __name__ == "__main__":
@@ -301,7 +349,7 @@ if __name__ == "__main__":
     sgd_bn_args["alpha"] = 0.001
     sgd_bn_args["beta"] = 0.9
     names = {
-        "sgd_no_momen" : "SGD with no Momentum",
+        "sgd_no_momen": "SGD with no Momentum",
         "sgd_momen": "SGD with Momentum",
         "adam": "SGD with Adam",
         "sgd_bn": "SGD with Batch Normalisation",
@@ -318,7 +366,12 @@ if __name__ == "__main__":
     # Experiments
     for algorithm in algorithms:
         model, history, te_l, te_acc, time_taken = run_algo(
-            algorithm, algorithms[algorithm][0], algorithms[algorithm][1], Xs_te, Ys_te, names
+            algorithm,
+            algorithms[algorithm][0],
+            algorithms[algorithm][1],
+            Xs_te,
+            Ys_te,
+            names,
         )
         # Generate Plots & Report here: Take a dict and unpack dict in plotting
         # te_l and te_acc are scalars, create an arr of len = len(x-axis marks) where each elem in the arr is the same value
