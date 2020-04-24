@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import os
+import copy
 import numpy
-from numpy import random
 import scipy
-import matplotlib
 import mnist
+import time
 import pickle
+import matplotlib
+from numpy import random
 from tensorflow import keras
 from tensorflow.keras import datasets, layers, models
 
@@ -190,22 +192,29 @@ def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
 # returns   a tuple of
 #   model       the trained model (should be of type tensorflow.python.keras.engine.sequential.Sequential)
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
-def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs):
+def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs, d1, d2):
     # TODO students should implement this
+    print(Xs.shape)
+    input_shape = (28, 28, 1)
     model = models.Sequential()
     model.add(
         layers.Conv2D(
-            32, kernel_size=(5, 5), activation="relu", input_shape=(28, 28, 1)
+            32, kernel_size=(3, 3), activation="relu", input_shape=input_shape
         )
     )
     model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Conv2D(64, kernel_size=(5, 5), activation="relu"))
+    model.add(layers.Conv2D(64, kernel_size=(3, 3), activation="relu"))
     model.add(layers.MaxPooling2D((2, 2)))
+    model.add(keras.layers.Flatten())
     model.add(layers.Dense(512, activation="relu"))
     model.add(layers.Dense(10, activation="softmax"))
-
-    opt = tf.keras.optimizers.SGD(
-        learning_rate=alpha, momentum=beta, nesterov=False, name="SGD"
+    opt = tf.keras.optimizers.Adam(
+        learning_rate=alpha,
+        beta_1=rho1,
+        beta_2=rho2,
+        epsilon=1e-07,
+        amsgrad=False,
+        name="Adam",
     )
     lossFunc = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
@@ -217,7 +226,7 @@ def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs):
     return model, history
 
 
-def run_algo(algorithm_identifier, algo_fn, algo_args, X_te, Y_te):
+def run_algo(algorithm_identifier, algo_fn, algo_args, X_te, Y_te, names):
     print(f"Running Algorithm {algorithm_identifier} ...")
     start = time.time()
     model, history = algo_fn(**algo_args)
@@ -226,14 +235,46 @@ def run_algo(algorithm_identifier, algo_fn, algo_args, X_te, Y_te):
     print(f"Algorithm {algorithm_identifier} complete. Time taken: {time_taken}")
 
     print(f"Testing Algorithm {algorithm_identifier} ...")
+    X_te = X_te.reshape(10000,784).astype("float64") if not (algorithm_identifier == "cnn") else X_te
     te_l, te_acc = evaluate_model(X_te, Y_te, model)
     print(f"Testing {algorithm_identifier} complete.")
-
+    generatePlot(algorithm_identifier, history.history, te_l, te_acc, names)
     return model, history, te_l, te_acc, time_taken
+
+def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
+    figures_dir = "Figures/"
+    if not os.path.isdir(figures_dir):
+        print("Figures folder does not exist. Creating ...")
+        os.makedirs(figures_dir)
+        print(f"Created {figures_dir}.")
+    print(history, history["loss"], len(history["loss"]))
+    test_err = [test_err for _ in range(len(history["loss"]))]
+    plt.plot(range(len(history["loss"])), history["loss"], label="Training loss")
+    plt.plot(range(len(history["val_loss"])), history["val_loss"], label="Training loss")
+    plt.plot(range(len(history["loss"])), test_err, label="Training loss")
+    plt.title(names[algorithm_identifier])
+    plt.xlabel("Number of Epoch")
+    plt.ylabel("loss")
+    plt.legend(loc="lower right")
+    plt.savefig(figures_dir + algorithm_identifier + "_loss" + ".png")
+    plt.close()
+
+    test_acc = [test_acc for _ in range(len(history["loss"]))]
+    plt.plot(range(len(history["acc"])), history["acc"], label="Training accuracy")
+    plt.plot(range(len(history["val_acc"])), history["val_acc"], label="Validation accuracy")
+    plt.plot(range(len(history["val_acc"])), test_acc, label="Validation accuracy")
+    plt.title(names[algorithm_identifier])
+    plt.xlabel("Number of Epoch")
+    plt.ylabel("accuracy")
+    plt.legend(loc="lower right")
+    plt.savefig(figures_dir + algorithm_identifier + "_acc" + ".png")
+    plt.close()
+
+
 
 
 if __name__ == "__main__":
-    # (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
+    (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
 
     DIVIDER = "#" * 20
     basic_args = {
@@ -259,7 +300,13 @@ if __name__ == "__main__":
     sgd_bn_args = copy.copy(basic_args)
     sgd_bn_args["alpha"] = 0.001
     sgd_bn_args["beta"] = 0.9
-
+    names = {
+        "sgd_no_momen" : "SGD with no Momentum",
+        "sgd_momen": "SGD with Momentum",
+        "adam": "SGD with Adam",
+        "sgd_bn": "SGD with Batch Normalisation",
+        "cnn": "CNN with Adams",
+    }
     algorithms = {
         "sgd_no_momen": (train_fully_connected_sgd, sgd_no_momen_args),
         "sgd_momen": (train_fully_connected_sgd, sgd_momen_args),
@@ -271,8 +318,9 @@ if __name__ == "__main__":
     # Experiments
     for algorithm in algorithms:
         model, history, te_l, te_acc, time_taken = run_algo(
-            algorithm, algorithms[algorithm][0], algorithms[algorithm][1], X_te, Y_te
+            algorithm, algorithms[algorithm][0], algorithms[algorithm][1], Xs_te, Ys_te, names
         )
         # Generate Plots & Report here: Take a dict and unpack dict in plotting
         # te_l and te_acc are scalars, create an arr of len = len(x-axis marks) where each elem in the arr is the same value
         print(f"Time taken to run {algorithm}: {time_taken}")
+        print("History:", history.history)
