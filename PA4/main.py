@@ -7,6 +7,7 @@ import mnist
 import time
 import pickle
 import matplotlib
+import itertools as it
 from numpy import random
 from tensorflow import keras
 from tensorflow.keras import datasets, layers, models
@@ -192,7 +193,7 @@ def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
 # returns   a tuple of
 #   model       the trained model (should be of type tensorflow.python.keras.engine.sequential.Sequential)
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
-def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs, d1, d2):
+def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs):
     # TODO students should implement this
     print(Xs.shape)
     input_shape = (28, 28, 1)
@@ -256,9 +257,9 @@ def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
     test_err = [test_err for _ in range(len(history["loss"]))]
     plt.plot(range(len(history["loss"])), history["loss"], label="Training loss")
     plt.plot(
-        range(len(history["val_loss"])), history["val_loss"], label="Training loss"
+        range(len(history["val_loss"])), history["val_loss"], label="Validation loss"
     )
-    plt.plot(range(len(history["loss"])), test_err, label="Training loss")
+    plt.plot(range(len(history["loss"])), test_err, label="Testing loss")
     plt.title(names[algorithm_identifier])
     plt.xlabel("Number of Epoch")
     plt.ylabel("loss")
@@ -271,7 +272,7 @@ def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
     plt.plot(
         range(len(history["val_acc"])), history["val_acc"], label="Validation accuracy"
     )
-    plt.plot(range(len(history["val_acc"])), test_acc, label="Validation accuracy")
+    plt.plot(range(len(history["val_acc"])), test_acc, label="Testing accuracy")
     plt.title(names[algorithm_identifier])
     plt.xlabel("Number of Epoch")
     plt.ylabel("accuracy")
@@ -279,9 +280,15 @@ def generatePlot(algorithm_identifier, history, test_err, test_acc, names):
     plt.savefig(figures_dir + algorithm_identifier + "_acc" + ".png")
     plt.close()
 
+def print_config(config):
+    print("Current Configuration:")
+    print("~" * 15)
+    for k in config:
+        print(f"{k}: {config[k]}")
+    print("~" * 15)
 
 def grid_search(
-    tr_data, te_data, hyper_params, algo_args, algo_fn, algo_id, tuning_basis=""
+    tr_data, te_data, hyper_params, algo_args, algo_fn, algo_id, names, tuning_basis=""
 ):
     train_x, train_y = tr_data
     test_x, test_y = te_data
@@ -293,18 +300,20 @@ def grid_search(
 
     print("\n" + DIVIDER)
     print(DIVIDER)
-    print(f"Performing hyperparameter tuning for {algo_id} ...")
+    print(f"Performing hyperparameter tuning for {names[algo_id]} ...")
     for config in configs:
         print_config(config)
         for k in config:
             algo_args[k] = config[k]
         model, history, te_l, te_acc, _ = run_algo(
-            algo_id, algo_fn, algo_args, test_x, test_y
+            algo_id, algo_fn, algo_args, test_x, test_y, names
         )
         config["te_l"] = te_l
         config["te_acc"] = te_acc
+        config["tr_loss"] = history.history["loss"][-1]
+        config["val_loss"] = history.history["val_loss"][-1]
 
-    print(f"Tuning for {algo_id} complete.")
+    print(f"Tuning for {names[algo_id]} complete.")
     print(DIVIDER)
     print(DIVIDER)
 
@@ -317,7 +326,7 @@ def grid_search(
 def choose_best(dict_list, metric="", find_max=False):
     fn = min if not find_max else max
     if not metric:
-        return fn(dict_list, key=lambda x: (x["tr_loss"] + x["tr_err"]))
+        return fn(dict_list, key=lambda x: (x["val_loss"]))
     return fn(dict_list, key=lambda x: x[metric])
 
 
@@ -325,13 +334,21 @@ if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
 
     DIVIDER = "#" * 20
+    
+    names = {
+        "sgd_no_momen": "SGD with no Momentum",
+        "sgd_momen": "SGD with Momentum",
+        "adam": "SGD with Adam",
+        "sgd_bn": "SGD with Batch Normalisation",
+        "cnn": "CNN with Adams",
+    }
     basic_args = {
         "Xs": Xs_tr,
         "Ys": Ys_tr,
         "d1": 1024,
         "d2": 256,
         "alpha": 0.1,
-        "Epochs": 10,
+        "Epochs": 2,
         "B": 128,
     }
     sgd_no_momen_args = copy.copy(basic_args)
@@ -348,32 +365,47 @@ if __name__ == "__main__":
     sgd_bn_args = copy.copy(basic_args)
     sgd_bn_args["alpha"] = 0.001
     sgd_bn_args["beta"] = 0.9
-    names = {
-        "sgd_no_momen": "SGD with no Momentum",
-        "sgd_momen": "SGD with Momentum",
-        "adam": "SGD with Adam",
-        "sgd_bn": "SGD with Batch Normalisation",
-        "cnn": "CNN with Adams",
-    }
+
+    cnn_args = copy.copy(adam_args)
+    del cnn_args["d1"]
+    del cnn_args["d2"]
+    
     algorithms = {
         "sgd_no_momen": (train_fully_connected_sgd, sgd_no_momen_args),
         "sgd_momen": (train_fully_connected_sgd, sgd_momen_args),
         "adam": (train_fully_connected_adam, adam_args),
         "sgd_bn": (train_fully_connected_bn_sgd, sgd_bn_args),
-        "cnn": (train_CNN_sgd, adam_args),
+        "cnn": (train_CNN_sgd, cnn_args),
     }
 
     # Experiments
-    for algorithm in algorithms:
-        model, history, te_l, te_acc, time_taken = run_algo(
-            algorithm,
-            algorithms[algorithm][0],
-            algorithms[algorithm][1],
-            Xs_te,
-            Ys_te,
-            names,
-        )
-        # Generate Plots & Report here: Take a dict and unpack dict in plotting
-        # te_l and te_acc are scalars, create an arr of len = len(x-axis marks) where each elem in the arr is the same value
-        print(f"Time taken to run {algorithm}: {time_taken}")
-        print("History:", history.history)
+    # for algorithm in algorithms:
+    #     model, history, te_l, te_acc, time_taken = run_algo(
+    #         algorithm,
+    #         algorithms[algorithm][0],
+    #         algorithms[algorithm][1],
+    #         Xs_te,
+    #         Ys_te,
+    #         names,
+    #     )
+    #     # Generate Plots & Report here: Take a dict and unpack dict in plotting
+    #     # te_l and te_acc are scalars, create an arr of len = len(x-axis marks) where each elem in the arr is the same value
+    #     print(f"Time taken to run {algorithm}: {time_taken}")
+    #     print("History:", history.history)
+
+    # Hyperparameter tuning for SGD with Momentum
+    # hyper_params = {"alpha" : [0.99, 0.3, 0.1, 0.03, 0.01, 0.003, 0.001]}
+
+    # sgd_momtm_tune = grid_search((Xs_tr, Ys_tr), (Xs_te, Ys_te), hyper_params, algorithms["sgd_momen"][1], algorithms["sgd_momen"][0], "sgd_momen", names)
+    # print("Best hyperparam combo for SGD with momentum is:")
+    # print(sgd_momtm_tune)
+
+    # Hyperparameter tuning for SGD without Momentum
+    hyper_params = {
+        "alpha" : [0.3, 0.1, 0.01, 0.001],
+        "d1" : [64, 256, 512],
+        "d2" : [32, 128, 256],
+    }
+    sgd_tune = grid_search((Xs_tr, Ys_tr), (Xs_te, Ys_te), hyper_params, algorithms["sgd_no_momen"][1], algorithms["sgd_no_momen"][0], "sgd_no_momen", names)
+    print("Best hyperparam combo for SGD without momentum is:")
+    print(sgd_tune)
