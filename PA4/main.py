@@ -74,12 +74,10 @@ def evaluate_model(Xs, Ys, model):
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
 def train_fully_connected_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
     # TODO students should implement this
-
-    # Xs = Xs.reshape(60000, 784).astype("float64")
+    inp_shape = (Xs.shape[1], Xs.shape[2], Xs.shape[3])
     Ys = Ys.astype("float64")
-
     model = tf.keras.models.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(28,28,1)))
+    model.add(tf.keras.layers.Flatten(input_shape=inp_shape))
     model.add(tf.keras.layers.Dense(d1, activation="relu", name="dense_1"))
     model.add(tf.keras.layers.Dense(d2, activation="relu", name="dense_2"))
     model.add(tf.keras.layers.Dense(10, activation="softmax", name="predictions"))
@@ -115,11 +113,10 @@ def train_fully_connected_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
 def train_fully_connected_adam(Xs, Ys, d1, d2, alpha, rho1, rho2, B, Epochs):
     # TODO students should implement this
 
-    # Xs = Xs.reshape(60000, 784).astype("float64")
+    inp_shape = (Xs.shape[1], Xs.shape[2], Xs.shape[3])
     Ys = Ys.astype("float64")
-
     model = tf.keras.models.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(28,28,1)))
+    model.add(tf.keras.layers.Flatten(input_shape=inp_shape))
     model.add(tf.keras.layers.Dense(d1, activation="relu", name="dense_1"))
     model.add(tf.keras.layers.Dense(d2, activation="relu", name="dense_2"))
     model.add(tf.keras.layers.Dense(10, activation="softmax", name="predictions"))
@@ -158,11 +155,10 @@ def train_fully_connected_adam(Xs, Ys, d1, d2, alpha, rho1, rho2, B, Epochs):
 def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
     # TODO students should implement this
 
-    # Xs = Xs.reshape(60000, 784).astype("float64")
+    inp_shape = (Xs.shape[1], Xs.shape[2], Xs.shape[3])
     Ys = Ys.astype("float64")
-
     model = tf.keras.models.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(28,28,1)))
+    model.add(tf.keras.layers.Flatten(input_shape=inp_shape))
     model.add(tf.keras.layers.Dense(d1, activation="relu", name="dense_1"))
     model.add(tf.keras.layers.BatchNormalization(axis=-1, momentum=beta))
     model.add(tf.keras.layers.Dense(d2, activation="relu", name="dense_2"))
@@ -197,12 +193,12 @@ def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
 #   history     the history of training returned by model.fit (should be of type tensorflow.python.keras.callbacks.History)
 def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs):
     # TODO students should implement this
-    print(Xs.shape)
-    input_shape = (28, 28, 1)
+
+    inp_shape = (Xs.shape[1], Xs.shape[2], Xs.shape[3])
     model = tf.keras.models.Sequential()
     model.add(
         tf.keras.layers.Conv2D(
-            32, kernel_size=(3, 3), activation="relu", input_shape=input_shape
+            32, kernel_size=(3, 3), activation="relu", input_shape=inp_shape
         )
     )
     model.add(tf.keras.layers.MaxPooling2D((2, 2)))
@@ -228,7 +224,7 @@ def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs):
 
 
 def run_algo(algorithm_identifier, algo_fn, algo_args, X_te, Y_te, names):
-    print(f"Running Algorithm {algorithm_identifier} ...")
+    print(f"\nRunning Algorithm {algorithm_identifier} ...")
     start = time.time()
     model, history = algo_fn(**algo_args)
     end = time.time()
@@ -236,11 +232,6 @@ def run_algo(algorithm_identifier, algo_fn, algo_args, X_te, Y_te, names):
     print(f"Algorithm {algorithm_identifier} complete. Time taken: {time_taken}")
 
     print(f"Testing Algorithm {algorithm_identifier} ...")
-    X_te = (
-        X_te.reshape(10000, 784).astype("float64")
-        if not (algorithm_identifier == "cnn")
-        else X_te
-    )
     te_l, te_acc = evaluate_model(X_te, Y_te, model)
     print(f"Testing {algorithm_identifier} complete.")
     generatePlot(algorithm_identifier, history.history, te_l, te_acc, names)
@@ -302,6 +293,7 @@ def grid_search(
     print(DIVIDER)
     print(f"Performing hyperparameter tuning for {names[algo_id]} ...")
     for config in configs:
+        print("\n")
         print_config(config)
         for k in config:
             algo_args[k] = config[k]
@@ -312,6 +304,7 @@ def grid_search(
         config["te_acc"] = te_acc
         config["tr_loss"] = history.history["loss"][-1]
         config["val_loss"] = history.history["val_loss"][-1]
+        print("\n")
 
     print(f"Tuning for {names[algo_id]} complete.")
     print(DIVIDER)
@@ -333,8 +326,11 @@ def choose_best(dict_list, metric="", find_max=False):
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
 
+    # To make it run on not-so powerful machines
+    # (Xs_tr, Ys_tr, Xs_te, Ys_te) = (Xs_tr[:50], Ys_tr[:50], Xs_te[:50], Ys_te[:50])
+
     DIVIDER = "#" * 20
-    
+
     names = {
         "sgd_no_momen": "SGD with no Momentum",
         "sgd_momen": "SGD with Momentum",
@@ -348,7 +344,7 @@ if __name__ == "__main__":
         "d1": 1024,
         "d2": 256,
         "alpha": 0.1,
-        "Epochs": 2,
+        "Epochs": 10,
         "B": 128,
     }
     sgd_no_momen_args = copy.copy(basic_args)
@@ -369,7 +365,7 @@ if __name__ == "__main__":
     cnn_args = copy.copy(adam_args)
     del cnn_args["d1"]
     del cnn_args["d2"]
-    
+
     algorithms = {
         "sgd_no_momen": (train_fully_connected_sgd, sgd_no_momen_args),
         "sgd_momen": (train_fully_connected_sgd, sgd_momen_args),
@@ -379,26 +375,23 @@ if __name__ == "__main__":
     }
 
     # Experiments
-    # for algorithm in algorithms:
-    #     model, history, te_l, te_acc, time_taken = run_algo(
-    #         algorithm,
-    #         algorithms[algorithm][0],
-    #         algorithms[algorithm][1],
-    #         Xs_te,
-    #         Ys_te,
-    #         names,
-    #     )
-    #     # Generate Plots & Report here: Take a dict and unpack dict in plotting
-    #     # te_l and te_acc are scalars, create an arr of len = len(x-axis marks) where each elem in the arr is the same value
-    #     print(f"Time taken to run {algorithm}: {time_taken}")
-    #     print("History:", history.history)
+    for algorithm in algorithms:
+        model, history, te_l, te_acc, time_taken = run_algo(
+            algorithm,
+            algorithms[algorithm][0],
+            algorithms[algorithm][1],
+            Xs_te,
+            Ys_te,
+            names,
+        )
+        print("History:", history.history)
 
     # Hyperparameter tuning for SGD with Momentum
-    # hyper_params = {"alpha" : [0.99, 0.3, 0.1, 0.03, 0.01, 0.003, 0.001]}
+    hyper_params = {"alpha" : [0.99, 0.3, 0.1, 0.03, 0.01, 0.003, 0.001]}
 
-    # sgd_momtm_tune = grid_search((Xs_tr, Ys_tr), (Xs_te, Ys_te), hyper_params, algorithms["sgd_momen"][1], algorithms["sgd_momen"][0], "sgd_momen", names)
-    # print("Best hyperparam combo for SGD with momentum is:")
-    # print(sgd_momtm_tune)
+    sgd_momtm_tune = grid_search((Xs_tr, Ys_tr), (Xs_te, Ys_te), hyper_params, algorithms["sgd_momen"][1], algorithms["sgd_momen"][0], "sgd_momen", names)
+    print("Best hyperparam combo for SGD with momentum is:")
+    print(sgd_momtm_tune)
 
     # Hyperparameter tuning for SGD without Momentum
     hyper_params = {
@@ -407,5 +400,17 @@ if __name__ == "__main__":
         "d2" : [32, 128, 256],
     }
     sgd_tune = grid_search((Xs_tr, Ys_tr), (Xs_te, Ys_te), hyper_params, algorithms["sgd_no_momen"][1], algorithms["sgd_no_momen"][0], "sgd_no_momen", names)
+    print("Best hyperparam combo for SGD without momentum is:")
+    print(sgd_tune)
+
+    r_hyperparams = {"alpha":[], "d1":[], "d2":[]}
+    mu_d, sigma_d = 6, 2
+    mu_a, sigma_a = 0.1, 0.02
+    num_trials = 12
+    for i in range(int(num_trials ** (1/3))):
+        r_hyperparams["alpha"] += [sigma_a * numpy.random.randn() + mu_a]
+        r_hyperparams["d1"] += [int(2 ** (sigma_d * numpy.random.randn() + mu_d))]
+        r_hyperparams["d2"] += [int(2 ** (sigma_d * numpy.random.randn() + mu_d))]
+    sgd_tune = grid_search((Xs_tr, Ys_tr), (Xs_te, Ys_te), r_hyperparams, algorithms["sgd_no_momen"][1], algorithms["sgd_no_momen"][0], "sgd_no_momen", names)
     print("Best hyperparam combo for SGD without momentum is:")
     print(sgd_tune)
