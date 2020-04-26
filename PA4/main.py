@@ -9,15 +9,15 @@ import pickle
 import matplotlib
 import itertools as it
 from numpy import random
-from tensorflow import keras
-from tensorflow.keras import datasets, layers, models
+# from tensorflow import keras
+# from tensorflow.keras import datasets, layers, models
 
 # matplotlib.use('agg')
 from matplotlib import pyplot as plt
 
 
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
+# from tensorflow.keras.layers import Dense
 
 mnist = tf.keras.datasets.mnist
 
@@ -75,18 +75,19 @@ def evaluate_model(Xs, Ys, model):
 def train_fully_connected_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
     # TODO students should implement this
 
-    Xs = Xs.reshape(60000, 784).astype("float64")
+    # Xs = Xs.reshape(60000, 784).astype("float64")
     Ys = Ys.astype("float64")
 
-    model = models.Sequential()
-    model.add(layers.Dense(d1, activation="relu", name="dense_1"))
-    model.add(layers.Dense(d2, activation="relu", name="dense_2"))
-    model.add(layers.Dense(10, activation="softmax", name="predictions"))
+    model = tf.keras.models.Sequential()
+    model.add(tf.keras.layers.Flatten(input_shape=(28,28,1)))
+    model.add(tf.keras.layers.Dense(d1, activation="relu", name="dense_1"))
+    model.add(tf.keras.layers.Dense(d2, activation="relu", name="dense_2"))
+    model.add(tf.keras.layers.Dense(10, activation="softmax", name="predictions"))
 
     opt = tf.keras.optimizers.SGD(
-        learning_rate=alpha, momentum=beta, nesterov=False, name="SGD"
+        lr=alpha, momentum=beta, nesterov=False,
     )
-    lossFunc = keras.losses.SparseCategoricalCrossentropy()
+    lossFunc =tf.keras.losses.sparse_categorical_crossentropy
 
     model.compile(optimizer=opt, loss=lossFunc, metrics=["acc"])
     history = model.fit(
@@ -114,23 +115,23 @@ def train_fully_connected_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
 def train_fully_connected_adam(Xs, Ys, d1, d2, alpha, rho1, rho2, B, Epochs):
     # TODO students should implement this
 
-    Xs = Xs.reshape(60000, 784).astype("float64")
+    # Xs = Xs.reshape(60000, 784).astype("float64")
     Ys = Ys.astype("float64")
 
-    model = models.Sequential()
-    model.add(layers.Dense(d1, activation="relu", name="dense_1"))
-    model.add(layers.Dense(d2, activation="relu", name="dense_2"))
-    model.add(layers.Dense(10, activation="softmax", name="predictions"))
+    model = tf.keras.models.Sequential()
+    model.add(tf.keras.layers.Flatten(input_shape=(28,28,1)))
+    model.add(tf.keras.layers.Dense(d1, activation="relu", name="dense_1"))
+    model.add(tf.keras.layers.Dense(d2, activation="relu", name="dense_2"))
+    model.add(tf.keras.layers.Dense(10, activation="softmax", name="predictions"))
 
     opt = tf.keras.optimizers.Adam(
-        learning_rate=alpha,
+        lr=alpha,
         beta_1=rho1,
         beta_2=rho2,
         epsilon=1e-07,
-        amsgrad=False,
-        name="Adam",
+
     )
-    lossFunc = keras.losses.SparseCategoricalCrossentropy()
+    lossFunc =tf.keras.losses.sparse_categorical_crossentropy
 
     model.compile(optimizer=opt, loss=lossFunc, metrics=["acc"])
     history = model.fit(
@@ -157,20 +158,21 @@ def train_fully_connected_adam(Xs, Ys, d1, d2, alpha, rho1, rho2, B, Epochs):
 def train_fully_connected_bn_sgd(Xs, Ys, d1, d2, alpha, beta, B, Epochs):
     # TODO students should implement this
 
-    Xs = Xs.reshape(60000, 784).astype("float64")
+    # Xs = Xs.reshape(60000, 784).astype("float64")
     Ys = Ys.astype("float64")
 
-    model = models.Sequential()
-    model.add(layers.Dense(d1, activation="relu", name="dense_1"))
-    model.add(layers.BatchNormalization(axis=-1, momentum=beta))
-    model.add(layers.Dense(d2, activation="relu", name="dense_2"))
-    model.add(layers.BatchNormalization(axis=-1, momentum=beta))
-    model.add(layers.Dense(10, activation="softmax", name="predictions"))
+    model = tf.keras.models.Sequential()
+    model.add(tf.keras.layers.Flatten(input_shape=(28,28,1)))
+    model.add(tf.keras.layers.Dense(d1, activation="relu", name="dense_1"))
+    model.add(tf.keras.layers.BatchNormalization(axis=-1, momentum=beta))
+    model.add(tf.keras.layers.Dense(d2, activation="relu", name="dense_2"))
+    model.add(tf.keras.layers.BatchNormalization(axis=-1, momentum=beta))
+    model.add(tf.keras.layers.Dense(10, activation="softmax", name="predictions"))
 
     opt = tf.keras.optimizers.SGD(
-        learning_rate=alpha, momentum=beta, nesterov=False, name="SGD"
+        lr=alpha, momentum=beta, nesterov=False,
     )
-    lossFunc = keras.losses.SparseCategoricalCrossentropy()
+    lossFunc =tf.keras.losses.sparse_categorical_crossentropy
 
     model.compile(optimizer=opt, loss=lossFunc, metrics=["acc"])
     history = model.fit(
@@ -197,27 +199,25 @@ def train_CNN_sgd(Xs, Ys, alpha, rho1, rho2, B, Epochs):
     # TODO students should implement this
     print(Xs.shape)
     input_shape = (28, 28, 1)
-    model = models.Sequential()
+    model = tf.keras.models.Sequential()
     model.add(
-        layers.Conv2D(
+        tf.keras.layers.Conv2D(
             32, kernel_size=(3, 3), activation="relu", input_shape=input_shape
         )
     )
-    model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Conv2D(64, kernel_size=(3, 3), activation="relu"))
-    model.add(layers.MaxPooling2D((2, 2)))
-    model.add(keras.layers.Flatten())
-    model.add(layers.Dense(512, activation="relu"))
-    model.add(layers.Dense(10, activation="softmax"))
+    model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+    model.add(tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation="relu"))
+    model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+    model.add(tf.keras.layers.Flatten())
+    model.add(tf.keras.layers.Dense(512, activation="relu"))
+    model.add(tf.keras.layers.Dense(10, activation="softmax"))
     opt = tf.keras.optimizers.Adam(
-        learning_rate=alpha,
+        lr=alpha,
         beta_1=rho1,
         beta_2=rho2,
         epsilon=1e-07,
-        amsgrad=False,
-        name="Adam",
     )
-    lossFunc = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    lossFunc = tf.keras.losses.sparse_categorical_crossentropy
 
     model.compile(optimizer=opt, loss=lossFunc, metrics=["acc"])
     history = model.fit(
