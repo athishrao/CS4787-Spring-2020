@@ -8,6 +8,7 @@ os.environ["MKL_NUM_THREADS"] = str(implicit_num_threads)
 os.environ["OPENBLAS_NUM_THREADS"] = str(implicit_num_threads)
 # END THREAD SETTINGS
 
+import numpy as np
 import numpy
 from numpy import random
 import scipy
@@ -18,7 +19,7 @@ matplotlib.use('agg')
 from matplotlib import pyplot
 import threading
 import time
-
+from scipy.special import softmax
 from tqdm import tqdm
 
 mnist_data_directory = os.path.join(os.path.dirname(__file__), "data")
@@ -33,10 +34,10 @@ def multinomial_logreg_error(Xs, Ys, W):
     error = numpy.mean(predictions != numpy.argmax(Ys, axis=0))
     return error
 
-def multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W):
+def multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W, dtype=np.float64):
     WdotX = numpy.dot(W, Xs[:,ii])
-    expWdotX = numpy.exp(WdotX - numpy.amax(WdotX, axis=0))
-    softmaxWdotX = expWdotX / numpy.sum(expWdotX, axis=0)
+    expWdotX = numpy.exp(WdotX - numpy.amax(WdotX, axis=0), dtype=dtype)
+    softmaxWdotX = expWdotX / numpy.sum(expWdotX, axis=0, dtype=dtype)
     return numpy.dot(softmaxWdotX - Ys[:,ii], Xs[:,ii].transpose()) / len(ii) + gamma * W
 # END UTILITY FUNCTIONS
 
@@ -96,8 +97,8 @@ def sgd_mss_with_momentum(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs):
             ii = range(ibatch*B, (ibatch+1)*B)
             V = beta * V - alpha * multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W)
             W = W + V
-            if ((ibatch+1) % monitor_period == 0):
-                models.append(W)
+            # if ((ibatch+1) % monitor_period == 0):
+            #     models.append(W)
     return models
 
 
@@ -137,12 +138,12 @@ def sgd_mss_with_momentum_noalloc(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs)
             # TODO this section of code should only use numpy operations with the "out=" argument specified (students should implement this)
             np.matmul(W0, X_batch[i], out=Y_temp)
             Y_temp = softmax(Y_temp, axis=0) - Y_batch[i]
-            np.matmul(yHat, X_batch[i].T, out=W_temp)
+            np.matmul(Y_temp, X_batch[i].T, out=W_temp)
             g = W_temp + B * gamma * W0
             g = g / B
             V = (beta * V) - (alpha * g)
             W0 = W0 + V
-    return W
+    return W0
 
 
 # SGD + Momentum (threaded)
@@ -163,7 +164,8 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO perform any global setup/initialization/allocation (students should implement this)
-
+    g = [0 for i in range(num_threads)]
+    Bt = B//num_threads
     # construct the barrier object
     iter_barrier = threading.Barrier(num_threads + 1)
 
@@ -173,8 +175,9 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
         for it in range(num_epochs):
             for ibatch in range(int(n/B)):
                 # TODO work done by thread in each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
-                # ii = range(ibatch*B + ithread*Bt, ibatch*B + (ithread+1)*Bt)
+                ii = range(ibatch*B + ithread*Bt, ibatch*B + (ithread+1)*Bt)
                 iter_barrier.wait()
+                g[ithread] = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0)
                 iter_barrier.wait()
 
     worker_threads = [threading.Thread(target=thread_main, args=(it,)) for it in range(num_threads)]
@@ -188,13 +191,14 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
         for ibatch in range(int(n/B)):
             iter_barrier.wait()
             # TODO work done on a single thread at each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
+            W0 = W0 - alpha * (1/B) * np.sum(g)
             iter_barrier.wait()
 
     for t in worker_threads:
         t.join()
 
     # return the learned model
-    return W
+    return W0
 
 
 # SGD + Momentum (No Allocation) in 32-bits => all operations in the inner loop should be a
@@ -215,8 +219,30 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
 def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs):
     (d, n) = Xs.shape
     (c, d) = W0.shape
-    # TODO students should implement this by copying and adapting their 64-bit code
-    pass
+    # TODO students should initialize the parameter vector W and pre-allocate any needed arrays here
+    Y_temp = np.zeros((c,B), dtype=np.float32)
+    W_temp = np.zeros(W0.shape, dtype=np.float32)
+    V = np.zeros(W0.shape, dtype=np.float32)
+    g = np.zeros(W0.shape, dtype=np.float32)
+    X_batch = []
+    Y_batch = []
+    for i in range(n // B):
+        ii = [(i*B + j) for j in range(B)]
+        X_batch.append(np.ascontiguousarray(Xs[:,ii], dtype=np.float32))
+        Y_batch.append(np.ascontiguousarray(Ys[:,ii], dtype=np.float32))
+    print("Running minibatch sequential-scan SGD with momentum (no allocation)")
+    for it in tqdm(range(num_epochs)):
+        for i in range(int(n/B)):
+            # ii = range(ibatch*B, (ibatch+1)*B)
+            # TODO this section of code should only use numpy operations with the "out=" argument specified (students should implement this)
+            np.matmul(W0, X_batch[i], out=Y_temp, dtype=np.float32)
+            Y_temp = softmax(Y_temp, axis=0).astype(np.float32) - Y_batch[i]
+            np.matmul(Y_temp, X_batch[i].T, out=W_temp, dtype=np.float32)
+            g = W_temp + B * gamma * W0
+            g = g / B
+            V = (beta * V) - (alpha * g)
+            W0 = W0 + V
+    return W0
 
 
 # SGD + Momentum (threaded, float32)
@@ -236,11 +262,79 @@ def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num
 def sgd_mss_with_momentum_threaded_float32(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs, num_threads):
     (d, n) = Xs.shape
     (c, d) = W0.shape
-    # TODO students should implement this by copying and adapting their 64-bit code
-    pass
+    # TODO perform any global setup/initialization/allocation (students should implement this)
+    g = [0 for i in range(num_threads)]
+    Bt = B//num_threads
+    # construct the barrier object
+    iter_barrier = threading.Barrier(num_threads + 1)
+
+    # a function for each thread to run
+    def thread_main(ithread):
+        # TODO perform any per-thread allocations
+        for it in range(num_epochs):
+            for ibatch in range(int(n/B)):
+                # TODO work done by thread in each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
+                ii = range(ibatch*B + ithread*Bt, ibatch*B + (ithread+1)*Bt)
+                iter_barrier.wait()
+                g[ithread] = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0, np.float32)
+                iter_barrier.wait()
+
+    worker_threads = [threading.Thread(target=thread_main, args=(it,)) for it in range(num_threads)]
+
+    for t in worker_threads:
+        print("running thread ", t)
+        t.start()
+
+    print("Running minibatch sequential-scan SGD with momentum (%d threads)" % num_threads)
+    for it in tqdm(range(num_epochs)):
+        for ibatch in range(int(n/B)):
+            iter_barrier.wait()
+            # TODO work done on a single thread at each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
+            W0 = W0 - alpha * (1/B) * np.sum(g)
+            iter_barrier.wait()
+
+    for t in worker_threads:
+        t.join()
+
+    # return the learned model
+    return W0
 
 
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
-    # TODO add code to produce figures
+    d, n = Xs_tr.shape
+    c, n = Ys_tr.shape
+    W0 = np.zeros((c,d))
+    gamma = 10 ** -4
+    alpha = 1.0
+    num_epochs = 100
+    monitor_freq = 1
+    beta = 0.9
+    B = 600
+    num_threads = 3
+
+    start = time.time()
+    sgd_mss_with_momentum(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs)
+    end = time.time()
+    print(f"Time for SGD Alloc {end - start} seconds.")
+
+    start = time.time()
+    sgd_mss_with_momentum_noalloc(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs)
+    end = time.time()
+    print(f"Time for SGD No Alloc {end - start} seconds.")
+
+    start = time.time()
+    sgd_mss_with_momentum_threaded(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs, num_threads)
+    end = time.time()
+    print(f"Time for SGD Momentum with {num_threads} threads {end - start} seconds.")
+    
+    start = time.time()
+    sgd_mss_with_momentum_noalloc_float32(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs)
+    end = time.time()
+    print(f"Time for SGD Momentum with 32 bit float {end - start} seconds.")
+
+    start = time.time()
+    sgd_mss_with_momentum_threaded_float32(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs, num_threads)
+    end = time.time()
+    print(f"Time for SGD Momentum with 32 bit float and with {num_threads} threads {end - start} seconds.")
