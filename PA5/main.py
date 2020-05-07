@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import copy
 
 # BEGIN THREAD SETTINGS this sets the number of threads used by numpy in the program (should be set to 1 for Parts 1 and 3)
 implicit_num_threads = 1
@@ -299,42 +300,100 @@ def sgd_mss_with_momentum_threaded_float32(Xs, Ys, gamma, W0, alpha, beta, B, nu
     # return the learned model
     return W0
 
+def run_algo(algorithm_identifier, algo_args):
+    algorithms = {
+        "sgd_momen": (sgd_mss_with_momentum, "SGD with Momentum"),
+        "sgd_momen_no_alloc": (sgd_mss_with_momentum_noalloc, "SGD with Momentum (no alloc)"),
+        "sgd_momen_threaded": (sgd_mss_with_momentum_threaded, "SGD with Momentum (Threaded)"),
+        "sgd_momen_no_alloc_fl32": (sgd_mss_with_momentum_noalloc_float32, "SGD with Momentum (no alloc, float 32)"),
+        "sgd_momen_threaded_fl32": (sgd_mss_with_momentum_threaded_float32, "SGD with Momentum (Threaded, float 32)"),
+    }
+    algo_fn = algorithms[algorithm_identifier][0]
+    print(f"\nRunning Algorithm {algorithm_identifier} ...")
+    print_config(algo_args)
+    d, n = algo_args["Xs"].shape
+    c, n = algo_args["Ys"].shape
+    W0 = np.zeros((c, d))
+    algo_args["W0"] = W0
+    start = time.time()
+    model = algo_fn(**algo_args)
+    end = time.time()
+    time_taken = end - start
+    print(f"Algorithm {algorithm_identifier} complete. Time taken: {time_taken}")
+    return  time_taken
 
+
+def print_config(config):
+    print("Current Configuration:")
+    print("~" * 15)
+    for k in config:
+        if k != "Xs" and k != "Ys":
+            print(f"{k}: {config[k]}")
+    print("~" * 15)
 
 if __name__ == "__main__":
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
-    d, n = Xs_tr.shape
-    c, n = Ys_tr.shape
-    W0 = np.zeros((c,d))
-    gamma = 10 ** -4
-    alpha = 1.0
-    num_epochs = 100
-    monitor_freq = 1
-    beta = 0.9
-    B = 600
-    num_threads = 3
+    # TODO: NEXT LINE IS ONLY FOR DEBUGGING, REMOVE ON SUBMISSION
+    Xs_tr, Ys_tr = Xs_tr[:50], Ys_tr[:50]
+    sgd_args = {
+        "Xs": Xs_tr,
+        "Ys": Ys_tr,
+        "alpha": 0.1,
+        "num_epochs": 20,
+        "beta": 0.9,
+        "gamma": 10 ** -4,
+    }
+    DIVIDER = "#" * 20
 
-    start = time.time()
-    sgd_mss_with_momentum(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs)
-    end = time.time()
-    print(f"Time for SGD Alloc {end - start} seconds.")
+    # Comments from the documenttion
+    # TODO FOR sgd_mss_with_momentum_noalloc
+    # To validate your implementation, you should check that the output of this new function is close to the output of your original sgd_mss_with_momentum function.
+    # TODO For threaded
+    # In order to make sure that your cores are not overloaded, you should set the number of cores used implicitly by numpy back to 1 (allowing the cores to be used explicitly by your implementation).
 
-    start = time.time()
-    sgd_mss_with_momentum_noalloc(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs)
-    end = time.time()
-    print(f"Time for SGD No Alloc {end - start} seconds.")
+    # ----- PART-1
+    batch_sizes = [8, 16, 30, 60, 200, 600, 3000]
+    sgd_momen, sgd_momen_noalloc = [], []
+    for batch_size in batch_sizes:
+        sgd_args["B"] = batch_size
+        sgd_momen += [run_algo("sgd_momen", sgd_args)]
+        sgd_momen_noalloc += [run_algo("sgd_momen_no_alloc", sgd_args)]
 
-    start = time.time()
-    sgd_mss_with_momentum_threaded(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs, num_threads)
-    end = time.time()
-    print(f"Time for SGD Momentum with {num_threads} threads {end - start} seconds.")
-    
-    start = time.time()
-    sgd_mss_with_momentum_noalloc_float32(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs)
-    end = time.time()
-    print(f"Time for SGD Momentum with 32 bit float {end - start} seconds.")
+    # ----- PART-2
+    # TODO: Change the environ variables here
+    # i_threaded = implicitly_threaded
+    i_threaded, noalloc_i_threaded = [], []
+    for batch_size in batch_sizes:
+        sgd_args["batch_size"] = batch_size
+        i_threaded += [run_algo("sgd_momen", sgd_args)]
+        noalloc_i_threaded += [run_algo("sgd_momen_no_alloc", sgd_args)]
 
-    start = time.time()
-    sgd_mss_with_momentum_threaded_float32(Xs_tr, Ys_tr, gamma, W0, alpha, beta, B, num_epochs, num_threads)
-    end = time.time()
-    print(f"Time for SGD Momentum with 32 bit float and with {num_threads} threads {end - start} seconds.")
+
+    # ----- PART-3
+    # TODO: Reset implicit numpy multithreading
+    # e_threaded = explicitly_threaded
+    e_threaded = []
+    threaded_args = copy.copy(sgd_args)
+    threaded_args["num_threads"] = 3
+    for batch_size in batch_sizes:
+        threaded_args["B"] = batch_size
+        e_threaded += [run_algo("sgd_momen_threaded", threaded_args)]
+
+    # ----- PART-4
+    # fl32_noalloc_e is for explicit threading
+    fl32_noalloc_e, fl32_threaded = [], []
+    for batch_size in batch_sizes:
+        sgd_args["B"] = batch_size
+        fl32_noalloc += [run_algo("sgd_momen_no_alloc_fl32", sgd_args)]
+        threaded_args["B"] = batch_size
+        fl32_threaded += [run_algo("sgd_momen_threaded_fl32", threaded_args)]
+
+    # TODO: Change the environ variables here to use implicit therading
+    # fl32_noalloc_i is for implicit threading
+    fl32_noalloc_i = []
+    for batch_size in batch_sizes:
+        sgd_args["B"] = batch_size
+        fl32_noalloc += [run_algo("sgd_momen_no_alloc_fl32", sgd_args)]
+
+
+    # TODO: Reset implicit numpy multithreading
