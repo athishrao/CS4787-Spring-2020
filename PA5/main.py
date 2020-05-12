@@ -3,12 +3,12 @@ import os
 import copy
 
 # BEGIN THREAD SETTINGS this sets the number of threads used by numpy in the program (should be set to 1 for Parts 1 and 3)
-implicit_num_threads = 1
-os.environ["OMP_NUM_THREADS"] = str(implicit_num_threads)
-os.environ["MKL_NUM_THREADS"] = str(implicit_num_threads)
-os.environ["OPENBLAS_NUM_THREADS"] = str(implicit_num_threads)
+def reset_threads(implicit_num_threads=1):
+    os.environ["OMP_NUM_THREADS"] = str(implicit_num_threads)
+    os.environ["MKL_NUM_THREADS"] = str(implicit_num_threads)
+    os.environ["OPENBLAS_NUM_THREADS"] = str(implicit_num_threads)
 # END THREAD SETTINGS
-
+import pickle
 import numpy as np
 import numpy
 from numpy import random
@@ -17,7 +17,7 @@ import matplotlib
 import mnist
 import pickle
 matplotlib.use('agg')
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 import threading
 import time
 from scipy.special import softmax
@@ -124,6 +124,8 @@ def sgd_mss_with_momentum_noalloc(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs)
     # TODO students should initialize the parameter vector W and pre-allocate any needed arrays here
     Y_temp = np.zeros((c,B))
     W_temp = np.zeros(W0.shape)
+    amax_temp = np.zeros(B)
+    softmax_temp = np.zeros((c,B))
     V = np.zeros(W0.shape)
     g = np.zeros(W0.shape)
     X_batch = []
@@ -138,12 +140,31 @@ def sgd_mss_with_momentum_noalloc(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs)
             # ii = range(ibatch*B, (ibatch+1)*B)
             # TODO this section of code should only use numpy operations with the "out=" argument specified (students should implement this)
             np.matmul(W0, X_batch[i], out=Y_temp)
-            Y_temp = softmax(Y_temp, axis=0) - Y_batch[i]
+
+            # WdotX = numpy.dot(W0, Xs[:,ii])
+            # expWdotX = numpy.exp(WdotX - numpy.amax(WdotX, axis=0), dtype=dtype)
+            # softmaxWdotX = expWdotX / numpy.sum(expWdotX, axis=0, dtype=dtype)
+            np.amax(Y_temp, axis=0, out=amax_temp)
+            np.subtract(Y_temp, amax_temp, out=softmax_temp)
+            np.exp(softmax_temp, out=softmax_temp)
+            np.sum(softmax_temp, axis=0, out=amax_temp)
+            np.divide(softmax_temp, amax_temp, out=softmax_temp)
+
+            # numpy.dot(softmaxWdotX - Ys[:,ii], Xs[:,ii].transpose()) / len(ii) + gamma * W
+            np.subtract(softmax_temp, Y_batch[i], out=Y_temp)
+            # Y_temp = softmax(Y_temp, axis=0) - Y_batch[i]
+
             np.matmul(Y_temp, X_batch[i].T, out=W_temp)
-            g = W_temp + B * gamma * W0
-            g = g / B
-            V = (beta * V) - (alpha * g)
-            W0 = W0 + V
+            np.divide(W_temp, B, out=W_temp)
+            np.multiply(gamma, W0, out=g)
+            np.add(W_temp, g, out=g)
+            # g = W_temp / B +  gamma * W0
+            np.multiply(V, beta, out=V)
+            np.multiply(g, alpha, out=g)
+            # V = (beta * V) - (alpha * g)
+            np.subtract(V, g, out=V)
+            np.add(V, W0, out=W0)
+            # W0 = W0 + V
     return W0
 
 
@@ -320,18 +341,42 @@ def run_algo(algorithm_identifier, algo_args):
     end = time.time()
     time_taken = end - start
     print(f"Algorithm {algorithm_identifier} complete. Time taken: {time_taken}")
-    return  time_taken
+    return  time_taken, W0
 
+def generatePlot(listOfElements, nameOfElements, batchSizes, batchNames):
+    figures_dir = "Figures/"
+    if not os.path.isdir(figures_dir):
+        print("Figures folder does not exist. Creating ...")
+        os.makedirs(figures_dir)
+        print(f"Created {figures_dir}.")
+    
+    for n, element in enumerate(listOfElements):
+        print((element))
+        print()
+        print((batchSizes))
+        print()
+        print(nameOfElements[n])
+        print()
+        print()
+        plt.plot(batchSizes, element, label=nameOfElements[n])
+        plt.xticks(batchSizes, batchNames)
+    plt.xlabel("Batch Sizes")
+    plt.ylabel("Time Taken")
+    plt.legend(loc="upper right")
+    
+    plt.savefig(figures_dir + "Result" + ".png")
+    return plt
 
 def print_config(config):
     print("Current Configuration:")
     print("~" * 15)
     for k in config:
-        if k != "Xs" and k != "Ys":
+        if k != "Xs" and k != "Ys" and k!= "W0":
             print(f"{k}: {config[k]}")
     print("~" * 15)
 
 if __name__ == "__main__":
+    reset_threads(implicit_num_threads=1)
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
     # TODO: NEXT LINE IS ONLY FOR DEBUGGING, REMOVE ON SUBMISSION
     Xs_tr, Ys_tr = Xs_tr[:50], Ys_tr[:50]
@@ -348,52 +393,78 @@ if __name__ == "__main__":
     # Comments from the documenttion
     # TODO FOR sgd_mss_with_momentum_noalloc
     # To validate your implementation, you should check that the output of this new function is close to the output of your original sgd_mss_with_momentum function.
+    def checkSimilarity(original, altered, atol=10**-6):
+        isSimilar = np.allclose(original, altered, rtol=1, atol=atol)
+        print(f"Similarity of the two matrices : {isSimilar}")
+        return isSimilar
+    
     # TODO For threaded
     # In order to make sure that your cores are not overloaded, you should set the number of cores used implicitly by numpy back to 1 (allowing the cores to be used explicitly by your implementation).
-
-    # ----- PART-1
+    listOfElements = []
     batch_sizes = [8, 16, 30, 60, 200, 600, 3000]
-    sgd_momen, sgd_momen_noalloc = [], []
-    for batch_size in batch_sizes:
-        sgd_args["B"] = batch_size
-        sgd_momen += [run_algo("sgd_momen", sgd_args)]
-        sgd_momen_noalloc += [run_algo("sgd_momen_no_alloc", sgd_args)]
+    if not os.path.exists("model.pickle"):
+        # ----- PART-1
+        reset_threads()
+        sgd_momen, sgd_momen_noalloc = [], []
+        for batch_size in batch_sizes:
+            sgd_args["B"] = batch_size
+            time_alloc, W_alloc = run_algo("sgd_momen", sgd_args)
+            sgd_momen += [time_alloc]
+            time_no_alloc, W_no_alloc = run_algo("sgd_momen_no_alloc", sgd_args)
+            sgd_momen_noalloc += [time_no_alloc]
+            checkSimilarity(W_alloc, W_no_alloc)
 
-    # ----- PART-2
-    # TODO: Change the environ variables here
-    # i_threaded = implicitly_threaded
-    i_threaded, noalloc_i_threaded = [], []
-    for batch_size in batch_sizes:
-        sgd_args["batch_size"] = batch_size
-        i_threaded += [run_algo("sgd_momen", sgd_args)]
-        noalloc_i_threaded += [run_algo("sgd_momen_no_alloc", sgd_args)]
+        # ----- PART-2
+        # TODO: Change the environ variables here
+        # i_threaded = implicitly_threaded
+        reset_threads(4)
+        i_threaded, noalloc_i_threaded = [], []
+        for batch_size in batch_sizes:
+            sgd_args["B"] = batch_size
+            time_alloc, W_alloc = run_algo("sgd_momen", sgd_args)
+            i_threaded += [time_alloc]
+            time_no_alloc, W_no_alloc = run_algo("sgd_momen_no_alloc", sgd_args)
+            noalloc_i_threaded += [time_no_alloc]
+            checkSimilarity(W_alloc, W_no_alloc)
 
+        # ----- PART-3
+        # TODO: Reset implicit numpy multithreading
+        # e_threaded = explicitly_threaded
+        reset_threads(4)
+        e_threaded = []
+        threaded_args = copy.copy(sgd_args)
+        threaded_args["num_threads"] = 3
+        for batch_size in batch_sizes:
+            threaded_args["B"] = batch_size
+            time_threaded, Ws = run_algo("sgd_momen_threaded", threaded_args)
+            e_threaded += [time_threaded]
+        # ----- PART-4
+        # fl32_noalloc_e is for explicit threading
+        fl32_noalloc_e, fl32_threaded = [], []
+        for batch_size in batch_sizes:
+            sgd_args["B"] = batch_size
+            time_noalloc, W_no_alloc = run_algo("sgd_momen_no_alloc_fl32", sgd_args)
+            fl32_noalloc_e += [time_noalloc]
+            threaded_args["B"] = batch_size
+            time_threaded, W_threaded = run_algo("sgd_momen_threaded_fl32", threaded_args)
+            fl32_threaded += [time_threaded]
+            checkSimilarity(W_threaded, W_no_alloc)
 
-    # ----- PART-3
+        # TODO: Change the environ variables here to use implicit therading
+        # fl32_noalloc_i is for implicit threading
+        fl32_noalloc_i = []
+        for batch_size in batch_sizes:
+            sgd_args["B"] = batch_size
+            time_fl32_noalloc_i, W = run_algo("sgd_momen_no_alloc_fl32", sgd_args)
+            fl32_noalloc_i += [time_fl32_noalloc_i]
+
+        listOfElements = [sgd_momen, sgd_momen_noalloc, fl32_noalloc_e, i_threaded, noalloc_i_threaded, fl32_noalloc_i, e_threaded, fl32_threaded]
+        with open("model.pickle", "wb") as f:
+            pickle.dump(listOfElements, f)
+    else:
+        with open("model.pickle", "rb") as f:
+            listOfElements = pickle.load(f)
     # TODO: Reset implicit numpy multithreading
-    # e_threaded = explicitly_threaded
-    e_threaded = []
-    threaded_args = copy.copy(sgd_args)
-    threaded_args["num_threads"] = 3
-    for batch_size in batch_sizes:
-        threaded_args["B"] = batch_size
-        e_threaded += [run_algo("sgd_momen_threaded", threaded_args)]
 
-    # ----- PART-4
-    # fl32_noalloc_e is for explicit threading
-    fl32_noalloc_e, fl32_threaded = [], []
-    for batch_size in batch_sizes:
-        sgd_args["B"] = batch_size
-        fl32_noalloc += [run_algo("sgd_momen_no_alloc_fl32", sgd_args)]
-        threaded_args["B"] = batch_size
-        fl32_threaded += [run_algo("sgd_momen_threaded_fl32", threaded_args)]
-
-    # TODO: Change the environ variables here to use implicit therading
-    # fl32_noalloc_i is for implicit threading
-    fl32_noalloc_i = []
-    for batch_size in batch_sizes:
-        sgd_args["B"] = batch_size
-        fl32_noalloc += [run_algo("sgd_momen_no_alloc_fl32", sgd_args)]
-
-
-    # TODO: Reset implicit numpy multithreading
+    nameOfElements = ["Baseline-64 Exp", "NMA-64 Exp", "NMA-32 Exp", "Baseline-64 Imp", "NMA-64 Imp", "NMA-32 Imp", "Multithreaded-64 Exp", "Multithreaded-32 Exp"]
+    generatePlot(listOfElements, nameOfElements, range(len(batch_sizes)), batch_sizes)
