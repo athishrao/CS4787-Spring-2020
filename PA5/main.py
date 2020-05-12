@@ -186,8 +186,13 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO perform any global setup/initialization/allocation (students should implement this)
-    g = [0 for i in range(num_threads)]
+    g = [np.zeros(W0.shape) for i in range(num_threads)]
     Bt = B//num_threads
+
+    W_temp = np.zeros(W0.shape)
+    amax_temp = np.zeros(Bt)
+    softmax_temp = np.zeros((c,Bt))
+
     # construct the barrier object
     iter_barrier = threading.Barrier(num_threads + 1)
 
@@ -199,7 +204,19 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
                 # TODO work done by thread in each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
                 ii = range(ibatch*B + ithread*Bt, ibatch*B + (ithread+1)*Bt)
                 iter_barrier.wait()
-                g[ithread] = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0)
+
+                np.dot(W0, Xs[:,ii], out=softmax_temp)
+                np.amax(softmax_temp, axis=0, out=amax_temp)
+                np.subtract(softmax_temp, amax_temp, out=softmax_temp)
+                np.exp(softmax_temp, out=softmax_temp)
+                np.sum(softmax_temp, axis=0, out=amax_temp)
+                np.divide(softmax_temp, amax_temp, out=softmax_temp)
+                np.subtract(softmax_temp,  Ys[:,ii], out=softmax_temp)
+                np.matmul(softmax_temp,  Xs[:,ii].T, out=W_temp)
+                np.divide(W_temp, B, out=W_temp)
+                np.multiply(gamma,  W0, out=g[ithread])
+                np.add(W_temp, g[ithread], out=g[ithread])
+                # g[ithread] = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0)
                 iter_barrier.wait()
 
     worker_threads = [threading.Thread(target=thread_main, args=(it,)) for it in range(num_threads)]
@@ -242,10 +259,12 @@ def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO students should initialize the parameter vector W and pre-allocate any needed arrays here
-    Y_temp = np.zeros((c,B), dtype=np.float32)
-    W_temp = np.zeros(W0.shape, dtype=np.float32)
-    V = np.zeros(W0.shape, dtype=np.float32)
-    g = np.zeros(W0.shape, dtype=np.float32)
+    Y_temp = np.zeros((c,B))
+    W_temp = np.zeros(W0.shape)
+    amax_temp = np.zeros(B)
+    softmax_temp = np.zeros((c,B))
+    V = np.zeros(W0.shape)
+    g = np.zeros(W0.shape)
     X_batch = []
     Y_batch = []
     for i in range(n // B):
@@ -257,13 +276,21 @@ def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num
         for i in range(int(n/B)):
             # ii = range(ibatch*B, (ibatch+1)*B)
             # TODO this section of code should only use numpy operations with the "out=" argument specified (students should implement this)
-            np.matmul(W0, X_batch[i], out=Y_temp, dtype=np.float32)
-            Y_temp = softmax(Y_temp, axis=0).astype(np.float32) - Y_batch[i]
+            np.matmul(W0, X_batch[i], out=Y_temp)
+            np.amax(Y_temp, axis=0, out=amax_temp)
+            np.subtract(Y_temp, amax_temp, out=softmax_temp, dtype=np.float32)
+            np.exp(softmax_temp, out=softmax_temp, dtype=np.float32)
+            np.sum(softmax_temp, axis=0, out=amax_temp, dtype=np.float32)
+            np.divide(softmax_temp, amax_temp, out=softmax_temp, dtype=np.float32)
+            np.subtract(softmax_temp, Y_batch[i], out=Y_temp, dtype=np.float32)
             np.matmul(Y_temp, X_batch[i].T, out=W_temp, dtype=np.float32)
-            g = W_temp + B * gamma * W0
-            g = g / B
-            V = (beta * V) - (alpha * g)
-            W0 = W0 + V
+            np.divide(W_temp, B, out=W_temp, dtype=np.float32)
+            np.multiply(gamma, W0, out=g, dtype=np.float32)
+            np.add(W_temp, g, out=g, dtype=np.float32)
+            np.multiply(V, beta, out=V, dtype=np.float32)
+            np.multiply(g, alpha, out=g, dtype=np.float32)
+            np.subtract(V, g, out=V, dtype=np.float32)
+            np.add(V, W0, out=W0, dtype=np.float32)
     return W0
 
 
@@ -376,7 +403,6 @@ def print_config(config):
     print("~" * 15)
 
 if __name__ == "__main__":
-    reset_threads(implicit_num_threads=1)
     (Xs_tr, Ys_tr, Xs_te, Ys_te) = load_MNIST_dataset()
     # TODO: NEXT LINE IS ONLY FOR DEBUGGING, REMOVE ON SUBMISSION
     Xs_tr, Ys_tr = Xs_tr[:50], Ys_tr[:50]
@@ -430,10 +456,10 @@ if __name__ == "__main__":
         # ----- PART-3
         # TODO: Reset implicit numpy multithreading
         # e_threaded = explicitly_threaded
-        reset_threads(4)
+        reset_threads(1)
         e_threaded = []
         threaded_args = copy.copy(sgd_args)
-        threaded_args["num_threads"] = 3
+        threaded_args["num_threads"] = 2
         for batch_size in batch_sizes:
             threaded_args["B"] = batch_size
             time_threaded, Ws = run_algo("sgd_momen_threaded", threaded_args)
