@@ -3,10 +3,10 @@ import os
 import copy
 
 # BEGIN THREAD SETTINGS this sets the number of threads used by numpy in the program (should be set to 1 for Parts 1 and 3)
-def reset_threads(implicit_num_threads=1):
-    os.environ["OMP_NUM_THREADS"] = str(implicit_num_threads)
-    os.environ["MKL_NUM_THREADS"] = str(implicit_num_threads)
-    os.environ["OPENBLAS_NUM_THREADS"] = str(implicit_num_threads)
+implicit_num_threads = 1
+os.environ["OMP_NUM_THREADS"] = str(implicit_num_threads)
+os.environ["MKL_NUM_THREADS"] = str(implicit_num_threads)
+os.environ["OPENBLAS_NUM_THREADS"] = str(implicit_num_threads)
 # END THREAD SETTINGS
 import pickle
 import numpy as np
@@ -92,7 +92,7 @@ def sgd_mss_with_momentum(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs):
     (d, n) = Xs.shape
     V = numpy.zeros(W0.shape)
     W = W0
-    print("Running minibatch sequential-scan SGD with momentum")
+    # print("Running minibatch sequential-scan SGD with momentum")
     for it in tqdm(range(num_epochs)):
         for ibatch in range(int(n/B)):
             ii = range(ibatch*B, (ibatch+1)*B)
@@ -134,7 +134,7 @@ def sgd_mss_with_momentum_noalloc(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs)
         ii = [(i*B + j) for j in range(B)]
         X_batch.append(np.ascontiguousarray(Xs[:,ii]))
         Y_batch.append(np.ascontiguousarray(Ys[:,ii]))
-    print("Running minibatch sequential-scan SGD with momentum (no allocation)")
+    # print("Running minibatch sequential-scan SGD with momentum (no allocation)")
     for it in tqdm(range(num_epochs)):
         for i in range(int(n/B)):
             # ii = range(ibatch*B, (ibatch+1)*B)
@@ -186,13 +186,10 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO perform any global setup/initialization/allocation (students should implement this)
-    g = [np.zeros(W0.shape) for i in range(num_threads)]
+    g = [W0 for i in range(num_threads)]
     Bt = B//num_threads
 
-    W_temp = np.zeros(W0.shape)
-    amax_temp = np.zeros(Bt)
-    softmax_temp = np.zeros((c,Bt))
-
+    W_temp1 = np.zeros(W0.shape)
     # construct the barrier object
     iter_barrier = threading.Barrier(num_threads + 1)
 
@@ -200,12 +197,14 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
     def thread_main(ithread):
         # TODO perform any per-thread allocations
         for it in range(num_epochs):
+            W_temp = np.zeros(W0.shape)
+            amax_temp = np.zeros(Bt)
+            softmax_temp = np.zeros((c,Bt))
             for ibatch in range(int(n/B)):
                 # TODO work done by thread in each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
                 ii = range(ibatch*B + ithread*Bt, ibatch*B + (ithread+1)*Bt)
                 iter_barrier.wait()
-
-                np.dot(W0, Xs[:,ii], out=softmax_temp)
+                np.dot(g[ithread], Xs[:,ii], out=softmax_temp)
                 np.amax(softmax_temp, axis=0, out=amax_temp)
                 np.subtract(softmax_temp, amax_temp, out=softmax_temp)
                 np.exp(softmax_temp, out=softmax_temp)
@@ -214,7 +213,7 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
                 np.subtract(softmax_temp,  Ys[:,ii], out=softmax_temp)
                 np.matmul(softmax_temp,  Xs[:,ii].T, out=W_temp)
                 np.divide(W_temp, B, out=W_temp)
-                np.multiply(gamma,  W0, out=g[ithread])
+                np.multiply(gamma,  g[ithread], out=g[ithread])
                 np.add(W_temp, g[ithread], out=g[ithread])
                 # g[ithread] = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0)
                 iter_barrier.wait()
@@ -230,7 +229,11 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
         for ibatch in range(int(n/B)):
             iter_barrier.wait()
             # TODO work done on a single thread at each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
-            W0 = W0 - alpha * (1/B) * np.sum(g)
+            # W0 = W0 - alpha * (1/B) * np.sum(g)
+            np.sum(g, axis=0, out=W_temp1)
+            np.multiply(W_temp1, alpha/B, out=W_temp1)
+            np.subtract(W0, W_temp1, out=W0)
+
             iter_barrier.wait()
 
     for t in worker_threads:
@@ -276,8 +279,8 @@ def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num
         for i in range(int(n/B)):
             # ii = range(ibatch*B, (ibatch+1)*B)
             # TODO this section of code should only use numpy operations with the "out=" argument specified (students should implement this)
-            np.matmul(W0, X_batch[i], out=Y_temp)
-            np.amax(Y_temp, axis=0, out=amax_temp)
+            np.matmul(W0, X_batch[i], out=Y_temp).astype(numpy.float32)
+            np.amax(Y_temp, axis=0, out=amax_temp).astype(numpy.float32)
             np.subtract(Y_temp, amax_temp, out=softmax_temp, dtype=np.float32)
             np.exp(softmax_temp, out=softmax_temp, dtype=np.float32)
             np.sum(softmax_temp, axis=0, out=amax_temp, dtype=np.float32)
@@ -312,20 +315,39 @@ def sgd_mss_with_momentum_threaded_float32(Xs, Ys, gamma, W0, alpha, beta, B, nu
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO perform any global setup/initialization/allocation (students should implement this)
-    g = [0 for i in range(num_threads)]
+    g = [W0 for i in range(num_threads)]
     Bt = B//num_threads
+
+    W_temp1 = np.zeros(W0.shape)
+    # amax_temp = np.zeros(Bt)
+    # softmax_temp = np.zeros((c,Bt))
     # construct the barrier object
     iter_barrier = threading.Barrier(num_threads + 1)
 
     # a function for each thread to run
     def thread_main(ithread):
+        W_temp = np.zeros(W0.shape)
+        amax_temp = np.zeros(Bt)
+        softmax_temp = np.zeros((c,Bt))
         # TODO perform any per-thread allocations
         for it in range(num_epochs):
             for ibatch in range(int(n/B)):
                 # TODO work done by thread in each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
                 ii = range(ibatch*B + ithread*Bt, ibatch*B + (ithread+1)*Bt)
                 iter_barrier.wait()
-                g[ithread] = multinomial_logreg_grad_i(Xs, Ys, ii, gamma, W0, np.float32)
+
+                np.dot(g[ithread], Xs[:,ii], out=softmax_temp).astype(np.float32)
+                np.amax(softmax_temp, axis=0, out=amax_temp).astype(np.float32)
+                np.subtract(softmax_temp, amax_temp, out=softmax_temp, dtype=np.float32)
+                np.exp(softmax_temp, out=softmax_temp, dtype=np.float32)
+                np.sum(softmax_temp, axis=0, out=amax_temp, dtype=np.float32)
+                np.divide(softmax_temp, amax_temp, out=softmax_temp, dtype=np.float32)
+                np.subtract(softmax_temp,  Ys[:,ii], out=softmax_temp, dtype=np.float32)
+                np.matmul(softmax_temp,  Xs[:,ii].T, out=W_temp, dtype=np.float32)
+                np.divide(W_temp, B, out=W_temp, dtype=np.float32)
+                np.multiply(gamma,  g[ithread], out=g[ithread], dtype=np.float32)
+                np.add(W_temp, g[ithread], out=g[ithread], dtype=np.float32)
+
                 iter_barrier.wait()
 
     worker_threads = [threading.Thread(target=thread_main, args=(it,)) for it in range(num_threads)]
@@ -339,7 +361,11 @@ def sgd_mss_with_momentum_threaded_float32(Xs, Ys, gamma, W0, alpha, beta, B, nu
         for ibatch in range(int(n/B)):
             iter_barrier.wait()
             # TODO work done on a single thread at each iteration; this section of code should primarily use numpy operations with the "out=" argument specified (students should implement this)
-            W0 = W0 - alpha * (1/B) * np.sum(g)
+            # W0 = W0 - alpha * (1/B) * np.sum(g)
+            np.sum(g, axis=0, out=W_temp1, dtype=np.float32)
+            np.multiply(W_temp1, alpha/B, out=W_temp1, dtype=np.float32)
+            np.subtract(W0, W_temp1, out=W0, dtype=np.float32)
+
             iter_barrier.wait()
 
     for t in worker_threads:
@@ -385,8 +411,8 @@ def generatePlot(listOfElements, nameOfElements, batchSizes, batchNames):
         print(nameOfElements[n])
         print()
         print()
-        plt.plot(batchSizes, element, label=nameOfElements[n])
-        plt.xticks(batchSizes, batchNames)
+        plt.loglog(batchNames, (element), label=nameOfElements[n])
+        # plt.xticks(batchSizes, batchNames)
     plt.xlabel("Batch Sizes")
     plt.ylabel("Time Taken")
     plt.legend(loc="upper right")
@@ -428,9 +454,9 @@ if __name__ == "__main__":
     # In order to make sure that your cores are not overloaded, you should set the number of cores used implicitly by numpy back to 1 (allowing the cores to be used explicitly by your implementation).
     listOfElements = []
     batch_sizes = [8, 16, 30, 60, 200, 600, 3000]
-    if not os.path.exists("model.pickle"):
+
+    if not os.path.exists("part134(1).pickle") and implicit_num_threads==1:
         # ----- PART-1
-        reset_threads()
         sgd_momen, sgd_momen_noalloc = [], []
         for batch_size in batch_sizes:
             sgd_args["B"] = batch_size
@@ -439,32 +465,19 @@ if __name__ == "__main__":
             time_no_alloc, W_no_alloc = run_algo("sgd_momen_no_alloc", sgd_args)
             sgd_momen_noalloc += [time_no_alloc]
             checkSimilarity(W_alloc, W_no_alloc)
-
-        # ----- PART-2
-        # TODO: Change the environ variables here
-        # i_threaded = implicitly_threaded
-        reset_threads(4)
-        i_threaded, noalloc_i_threaded = [], []
-        for batch_size in batch_sizes:
-            sgd_args["B"] = batch_size
-            time_alloc, W_alloc = run_algo("sgd_momen", sgd_args)
-            i_threaded += [time_alloc]
-            time_no_alloc, W_no_alloc = run_algo("sgd_momen_no_alloc", sgd_args)
-            noalloc_i_threaded += [time_no_alloc]
-            checkSimilarity(W_alloc, W_no_alloc)
-
+        
         # ----- PART-3
         # TODO: Reset implicit numpy multithreading
         # e_threaded = explicitly_threaded
-        reset_threads(1)
         e_threaded = []
         threaded_args = copy.copy(sgd_args)
-        threaded_args["num_threads"] = 2
+        threaded_args["num_threads"] = 4
         for batch_size in batch_sizes:
             threaded_args["B"] = batch_size
             time_threaded, Ws = run_algo("sgd_momen_threaded", threaded_args)
             e_threaded += [time_threaded]
-        # ----- PART-4
+
+        # ----- PART-4 (1)
         # fl32_noalloc_e is for explicit threading
         fl32_noalloc_e, fl32_threaded = [], []
         for batch_size in batch_sizes:
@@ -475,7 +488,34 @@ if __name__ == "__main__":
             time_threaded, W_threaded = run_algo("sgd_momen_threaded_fl32", threaded_args)
             fl32_threaded += [time_threaded]
             checkSimilarity(W_threaded, W_no_alloc)
+        
+        listA = [sgd_momen, sgd_momen_noalloc, e_threaded, fl32_noalloc_e, fl32_threaded]
+        pickle.dump(listA, open("part134(1).pickle", "wb"))
 
+    elif os.path.exists("part134(1).pickle"):
+        f1 =  open("part134(1).pickle", "rb")
+        listOfElements134_1 = pickle.load(f1)
+        # listofList = [sgd_momen, sgd_momen_noalloc, e_threaded, fl32_noalloc_e, fl32_threaded]
+        sgd_momen = listOfElements134_1[0]
+        sgd_momen_noalloc = listOfElements134_1[1]
+        e_threaded = listOfElements134_1[2]
+        fl32_noalloc_e = listOfElements134_1[3]
+        fl32_threaded = listOfElements134_1[4]
+
+    if not os.path.exists("part24(2).pickle") and implicit_num_threads==4:
+        # ----- PART-2
+        # TODO: Change the environ variables here
+        # i_threaded = implicitly_threaded
+        i_threaded, noalloc_i_threaded = [], []
+        for batch_size in batch_sizes:
+            sgd_args["B"] = batch_size
+            time_alloc, W_alloc = run_algo("sgd_momen", sgd_args)
+            i_threaded += [time_alloc]
+            time_no_alloc, W_no_alloc = run_algo("sgd_momen_no_alloc", sgd_args)
+            noalloc_i_threaded += [time_no_alloc]
+            checkSimilarity(W_alloc, W_no_alloc)
+        
+        # ----- PART-4 (2)
         # TODO: Change the environ variables here to use implicit therading
         # fl32_noalloc_i is for implicit threading
         fl32_noalloc_i = []
@@ -484,13 +524,20 @@ if __name__ == "__main__":
             time_fl32_noalloc_i, W = run_algo("sgd_momen_no_alloc_fl32", sgd_args)
             fl32_noalloc_i += [time_fl32_noalloc_i]
 
-        listOfElements = [sgd_momen, sgd_momen_noalloc, fl32_noalloc_e, i_threaded, noalloc_i_threaded, fl32_noalloc_i, e_threaded, fl32_threaded]
-        with open("model.pickle", "wb") as f:
-            pickle.dump(listOfElements, f)
-    else:
-        with open("model.pickle", "rb") as f:
-            listOfElements = pickle.load(f)
-    # TODO: Reset implicit numpy multithreading
+        listA = [i_threaded, noalloc_i_threaded, fl32_noalloc_i]
+        pickle.dump(listA, open("part24(2).pickle", "wb"))
+
+    elif os.path.exists("part24(2).pickle"):
+        f2 =  open("part24(2).pickle", "rb")
+        listOfElements24_2 = pickle.load(f2)
+        
+        # listofList = [i_threaded, noalloc_i_threaded, fl32_noalloc_i]
+        i_threaded = listOfElements24_2[0]
+        noalloc_i_threaded = listOfElements24_2[1]
+        fl32_noalloc_i = listOfElements24_2[2]
+
+
+    listOfElements = [sgd_momen, sgd_momen_noalloc, fl32_noalloc_e, i_threaded, noalloc_i_threaded, fl32_noalloc_i, e_threaded, fl32_threaded]
 
     nameOfElements = ["Baseline-64 Exp", "NMA-64 Exp", "NMA-32 Exp", "Baseline-64 Imp", "NMA-64 Imp", "NMA-32 Imp", "Multithreaded-64 Exp", "Multithreaded-32 Exp"]
     generatePlot(listOfElements, nameOfElements, range(len(batch_sizes)), batch_sizes)
