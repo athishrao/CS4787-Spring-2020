@@ -262,6 +262,8 @@ def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num
     Xs = Xs.astype(np.float32)
     Ys = Ys.astype(np.float32)
     W0 = W0.astype(np.float32)
+    alpha = np.float32(alpha)
+    gamma = np.float32(gamma)
 
     (d, n) = Xs.shape
     (c, d) = W0.shape
@@ -319,6 +321,9 @@ def sgd_mss_with_momentum_threaded_float32(Xs, Ys, gamma, W0, alpha, beta, B, nu
     Xs = Xs.astype(np.float32)
     Ys = Ys.astype(np.float32)
     W0 = W0.astype(np.float32)
+    alpha = np.float32(alpha)
+    gamma = np.float32(gamma)
+
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO perform any global setup/initialization/allocation (students should implement this)
