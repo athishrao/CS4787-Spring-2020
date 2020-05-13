@@ -3,7 +3,7 @@ import os
 import copy
 
 # BEGIN THREAD SETTINGS this sets the number of threads used by numpy in the program (should be set to 1 for Parts 1 and 3)
-implicit_num_threads = 1
+implicit_num_threads = 2
 os.environ["OMP_NUM_THREADS"] = str(implicit_num_threads)
 os.environ["MKL_NUM_THREADS"] = str(implicit_num_threads)
 os.environ["OPENBLAS_NUM_THREADS"] = str(implicit_num_threads)
@@ -259,15 +259,19 @@ def sgd_mss_with_momentum_threaded(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs
 #
 # returns         the final model arrived at at the end of training
 def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs):
+    Xs = Xs.astype(np.float32)
+    Ys = Ys.astype(np.float32)
+    W0 = W0.astype(np.float32)
+
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO students should initialize the parameter vector W and pre-allocate any needed arrays here
-    Y_temp = np.zeros((c,B))
-    W_temp = np.zeros(W0.shape)
-    amax_temp = np.zeros(B)
-    softmax_temp = np.zeros((c,B))
-    V = np.zeros(W0.shape)
-    g = np.zeros(W0.shape)
+    Y_temp = np.zeros((c,B), dtype=np.float32)
+    W_temp = np.zeros(W0.shape, dtype=np.float32)
+    amax_temp = np.zeros((B,), dtype=np.float32)
+    softmax_temp = np.zeros((c,B), dtype=np.float32)
+    V = np.zeros(W0.shape, dtype=np.float32)
+    g = np.zeros(W0.shape, dtype=np.float32)
     X_batch = []
     Y_batch = []
     for i in range(n // B):
@@ -312,13 +316,16 @@ def sgd_mss_with_momentum_noalloc_float32(Xs, Ys, gamma, W0, alpha, beta, B, num
 #
 # returns         the final model arrived at at the end of training
 def sgd_mss_with_momentum_threaded_float32(Xs, Ys, gamma, W0, alpha, beta, B, num_epochs, num_threads):
+    Xs = Xs.astype(np.float32)
+    Ys = Ys.astype(np.float32)
+    W0 = W0.astype(np.float32)
     (d, n) = Xs.shape
     (c, d) = W0.shape
     # TODO perform any global setup/initialization/allocation (students should implement this)
     g = [W0 for i in range(num_threads)]
     Bt = B//num_threads
 
-    W_temp1 = np.zeros(W0.shape)
+    W_temp1 = np.zeros(W0.shape).astype(np.float32)
     # amax_temp = np.zeros(Bt)
     # softmax_temp = np.zeros((c,Bt))
     # construct the barrier object
@@ -326,9 +333,9 @@ def sgd_mss_with_momentum_threaded_float32(Xs, Ys, gamma, W0, alpha, beta, B, nu
 
     # a function for each thread to run
     def thread_main(ithread):
-        W_temp = np.zeros(W0.shape)
-        amax_temp = np.zeros(Bt)
-        softmax_temp = np.zeros((c,Bt))
+        W_temp = np.zeros(W0.shape, dtype=np.float32)
+        amax_temp = np.zeros((Bt,), dtype=np.float32)
+        softmax_temp = np.zeros((c,Bt), dtype=np.float32)
         # TODO perform any per-thread allocations
         for it in range(num_epochs):
             for ibatch in range(int(n/B)):
@@ -402,7 +409,7 @@ def generatePlot(listOfElements, nameOfElements, batchSizes, batchNames):
         print("Figures folder does not exist. Creating ...")
         os.makedirs(figures_dir)
         print(f"Created {figures_dir}.")
-    
+
     for n, element in enumerate(listOfElements):
         print((element))
         print()
@@ -416,7 +423,7 @@ def generatePlot(listOfElements, nameOfElements, batchSizes, batchNames):
     plt.xlabel("Batch Sizes")
     plt.ylabel("Time Taken")
     plt.legend(loc="upper right")
-    
+
     plt.savefig(figures_dir + "Result" + ".png")
     return plt
 
@@ -449,7 +456,7 @@ if __name__ == "__main__":
         isSimilar = np.allclose(original, altered, rtol=1, atol=atol)
         print(f"Similarity of the two matrices : {isSimilar}")
         return isSimilar
-    
+
     # TODO For threaded
     # In order to make sure that your cores are not overloaded, you should set the number of cores used implicitly by numpy back to 1 (allowing the cores to be used explicitly by your implementation).
     listOfElements = []
@@ -465,13 +472,13 @@ if __name__ == "__main__":
             time_no_alloc, W_no_alloc = run_algo("sgd_momen_no_alloc", sgd_args)
             sgd_momen_noalloc += [time_no_alloc]
             checkSimilarity(W_alloc, W_no_alloc)
-        
+
         # ----- PART-3
         # TODO: Reset implicit numpy multithreading
         # e_threaded = explicitly_threaded
         e_threaded = []
         threaded_args = copy.copy(sgd_args)
-        threaded_args["num_threads"] = 4
+        threaded_args["num_threads"] = 2
         for batch_size in batch_sizes:
             threaded_args["B"] = batch_size
             time_threaded, Ws = run_algo("sgd_momen_threaded", threaded_args)
@@ -488,7 +495,7 @@ if __name__ == "__main__":
             time_threaded, W_threaded = run_algo("sgd_momen_threaded_fl32", threaded_args)
             fl32_threaded += [time_threaded]
             checkSimilarity(W_threaded, W_no_alloc)
-        
+
         listA = [sgd_momen, sgd_momen_noalloc, e_threaded, fl32_noalloc_e, fl32_threaded]
         pickle.dump(listA, open("part134(1).pickle", "wb"))
 
@@ -502,7 +509,7 @@ if __name__ == "__main__":
         fl32_noalloc_e = listOfElements134_1[3]
         fl32_threaded = listOfElements134_1[4]
 
-    if not os.path.exists("part24(2).pickle") and implicit_num_threads==4:
+    if not os.path.exists("part24(2).pickle") and implicit_num_threads==2:
         # ----- PART-2
         # TODO: Change the environ variables here
         # i_threaded = implicitly_threaded
@@ -514,7 +521,7 @@ if __name__ == "__main__":
             time_no_alloc, W_no_alloc = run_algo("sgd_momen_no_alloc", sgd_args)
             noalloc_i_threaded += [time_no_alloc]
             checkSimilarity(W_alloc, W_no_alloc)
-        
+
         # ----- PART-4 (2)
         # TODO: Change the environ variables here to use implicit therading
         # fl32_noalloc_i is for implicit threading
@@ -530,7 +537,7 @@ if __name__ == "__main__":
     elif os.path.exists("part24(2).pickle"):
         f2 =  open("part24(2).pickle", "rb")
         listOfElements24_2 = pickle.load(f2)
-        
+
         # listofList = [i_threaded, noalloc_i_threaded, fl32_noalloc_i]
         i_threaded = listOfElements24_2[0]
         noalloc_i_threaded = listOfElements24_2[1]
